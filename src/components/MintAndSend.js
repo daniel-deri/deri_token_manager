@@ -35,8 +35,8 @@ const DATABASE_ABI = [
     'function signature(address account) view returns (tuple(uint256 amount, uint256 fromChainId, address fromWormhole, uint256 toChainId, address toWormhole, uint256 nonce, uint256 timestamp, uint8 v, bytes32 r, bytes32 s, bool valid))'
 ]
 
-const MINTER_ADDRESS = '0x1a0b5F2EAde71626D051C29Ef425d9c49dc87Aea'
-const DERI_ADDRESS = '0x80b2d47CeD4353A164fCbBc5BAB3b6115dF4BFD7'
+const MINTER_ADDRESS = '0x919735d147185788D8A29942baC49A5164A1Bfd6'
+const DERI_ADDRESS = '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9'
 const DERI_ABI = [
     'function nonces(address account) view returns (uint256)',
     'function mint(address account, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)',
@@ -49,6 +49,7 @@ const ADDRESSES = {
     deriEthereum: '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9',
     deriBsc: '0xe60eaf5A997DFAe83739e035b005A33AfdCc6df5',
     deriArbitrum: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
+    deriZksync: '0x140D5bc5b62d6cB492B1A475127F50d531023803',
     miningVaultEthereum: '0x7826Ef8Da65494EA21D64D8E6A76AB1BED042FD8',
     miningVaultBsc: '0x6C8d3F31b2ad1AE997Afa20EAd88cb67E93C6E17',
     rewardVaultBscMain: '0x34Aa81135b1673Daaf7A0B71867c0e1b3D40941c',
@@ -62,11 +63,11 @@ const ADDRESSES = {
     wormholeBsc: '0x15a5969060228031266c64274a54e02Fbd924AbF',
     database: '0xd8137F05c1F432A80525053c473d0e286c4F46f0',
 
-
-    deriEthereumTestnet: '0x80b2d47CeD4353A164fCbBc5BAB3b6115dF4BFD7',
-    deriArbitrumTestnet: '0xee83355762254e641a0BBF844Cf3d3D65C43cEA4',
-    deriTokenManagerTestnet: "0xB45361830AC95cF787f7773E9A38471204B6b044",
-    zksyncDiamondProxyTestnet: "0x1908e2BF4a88F91E4eF0DC72f02b8Ea36BEa2319"
+    deriTokenManager: "0xe4405cf4a069296e62cfa4442e7309c419bb6cec",
+    arbitrumGatewayRouter: '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef',
+    arbitrumGateway: '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
+    zksyncL1Bridge: '0x57891966931Eb4Bb6FB81430E6cE0A03AAbDe063',
+    zksyncDiamondProxy: "0x32400084c286cf3e17e7b677ea9583e60a000324"
 }
 
 const ApproveBridges = () => {
@@ -74,7 +75,7 @@ const ApproveBridges = () => {
 
     const onApproveZksyncBridge = async () => {
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet,
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
             signer
         );
@@ -85,7 +86,7 @@ const ApproveBridges = () => {
 
     const onApproveArbitrumBridge = async () => {
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet,
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
             signer
         );
@@ -96,7 +97,7 @@ const ApproveBridges = () => {
 
     const onApproveWormhole = async () => {
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet,
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
             signer
         );
@@ -131,16 +132,14 @@ const SendDeriRowEthereumToBNB = ({ destinationName, destinationAddress, fromBal
         updateSignature()
     }, [updateSignature])
 
-    const onMint = async () => {
+    const getSignature = async () => {
         const signer = provider.getSigner()
-        console.log("signer address", await signer.getAddress())
         const deri = new ethers.Contract(DERI_ADDRESS, DERI_ABI, signer)
-        // const nonce = await deri.nonces(MINTER_ADDRESS)
-        const nonce = 1
+        const nonce = await deri.nonces(ADDRESSES.deriTokenManager)
         const deadline = parseInt(Date.now() / 86400000 + 1) * 86400
         const domain = {
             name: 'Deri',
-            chainId: 5,
+            chainId: 1,
             verifyingContract: DERI_ADDRESS
         }
         const types = {
@@ -152,7 +151,7 @@ const SendDeriRowEthereumToBNB = ({ destinationName, destinationAddress, fromBal
             ]
         }
         const value = {
-            account: MINTER_ADDRESS,
+            account: ADDRESSES.deriTokenManager,
             amount: bb(state.amount),
             nonce: nonce,
             deadline: deadline
@@ -160,76 +159,64 @@ const SendDeriRowEthereumToBNB = ({ destinationName, destinationAddress, fromBal
         const sig = ethers.utils.splitSignature(
             await signer._signTypedData(domain, types, value)
         )
-        console.log("signature", sig)
         return {
-            from: MINTER_ADDRESS,
             deadline: deadline,
             v: sig.v,
             r: sig.r,
             s: sig.s
         }
-        // await executeTx(deri.mint, [MINTER_ADDRESS, bb(amount), deadline, sig.v, sig.r, sig.s])
     }
 
 
     const onBridge = async () => {
-        const signatureData = await onMint()
+        const signatureData = await getSignature()
         const signer = provider.getSigner()
-
-
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet, // 替换为你的 L1GatewayRouter 合约地址
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
-            signer // 替换为你的以太坊提供者对象
+            signer
         );
 
         let tx
-        // try {    
-        tx = await executeTx(deriTokenManagerContract.mintAndBridgeToBnb, [
-            bb(state.amount),
-            signatureData.deadline,
-            signatureData.v,
-            signatureData.r,
-            signatureData.s
-        ])
-
-
-        // } catch (error) {
-        //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-        //     alert(message)
-        // }
+        try {
+            tx = await executeTx(deriTokenManagerContract.mintAndBridgeToBnb, [
+                bb(state.amount),
+                signatureData.deadline,
+                signatureData.v,
+                signatureData.r,
+                signatureData.s
+            ])
+        } catch (error) {
+            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+            alert(message)
+        }
     }
 
     const onClaim = async () => {
-
         const signer = provider.getSigner()
-
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet, // 替换为你的 L1GatewayRouter 合约地址
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
-            signer // 替换为你的以太坊提供者对象
+            signer
         );
 
         let tx
-        // try {    
-        tx = await executeTx(deriTokenManagerContract.claimAndSendBnb, [
-            state.signature.amount,
-            state.signature.fromChainId,
-            state.signature.fromWormhole,
-            state.signature.nonce,
-            state.signature.v,
-            state.signature.r,
-            state.signature.s,
-            destinationAddress
-        ])
+        try {
+            tx = await executeTx(deriTokenManagerContract.claimAndSendBnb, [
+                state.signature.amount,
+                state.signature.fromChainId,
+                state.signature.fromWormhole,
+                state.signature.nonce,
+                state.signature.v,
+                state.signature.r,
+                state.signature.s,
+                destinationAddress
+            ])
 
-
-
-
-        // } catch (error) {
-        //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-        //     alert(message)
-        // }
+        } catch (error) {
+            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+            alert(message)
+        }
     }
 
     return (
@@ -251,16 +238,14 @@ const SendDeriRowEthereumToBNB = ({ destinationName, destinationAddress, fromBal
 const SendDeriRowEthereumToArbitrum = ({ destinationName, destinationAddress, fromBalance, toBalance }) => {
     const [amount, setAmount] = useState('')
 
-    const onMint = async () => {
+    const getSignature = async () => {
         const signer = provider.getSigner()
-        console.log("signer address", await signer.getAddress())
         const deri = new ethers.Contract(DERI_ADDRESS, DERI_ABI, signer)
-        // const nonce = await deri.nonces(MINTER_ADDRESS)
-        const nonce = 1
+        const nonce = await deri.nonces(ADDRESSES.deriTokenManager)
         const deadline = parseInt(Date.now() / 86400000 + 1) * 86400
         const domain = {
             name: 'Deri',
-            chainId: 5,
+            chainId: 1,
             verifyingContract: DERI_ADDRESS
         }
         const types = {
@@ -272,35 +257,29 @@ const SendDeriRowEthereumToArbitrum = ({ destinationName, destinationAddress, fr
             ]
         }
         const value = {
-            account: MINTER_ADDRESS,
+            account: ADDRESSES.deriTokenManager,
             amount: bb(amount),
             nonce: nonce,
             deadline: deadline
         }
-
-
         const sig = ethers.utils.splitSignature(
             await signer._signTypedData(domain, types, value)
         )
-        console.log("signature", sig)
         return {
-            from: MINTER_ADDRESS,
             deadline: deadline,
             v: sig.v,
             r: sig.r,
             s: sig.s
         }
-        // await executeTx(deri.mint, [MINTER_ADDRESS, bb(amount), deadline, sig.v, sig.r, sig.s])
     }
-
 
     const parseOutboundTransferData = (data) => {
         const signer = provider.getSigner()
         const abiCoder = ethers.utils.defaultAbiCoder;
         const l1GatewayRouterContract = new ethers.Contract(
-            '0x4c7708168395aEa569453Fc36862D2ffcDaC588c', // 替换为你的 L1GatewayRouter 合约地址
+            ADDRESSES.arbitrumGatewayRouter, // 替换为你的 L1GatewayRouter 合约地址
             L1GatewayRouter_ABI,
-            signer // 替换为你的以太坊提供者对象
+            signer
         );
 
         const parsedData = l1GatewayRouterContract.interface.decodeFunctionData('outboundTransfer', data);
@@ -323,63 +302,48 @@ const SendDeriRowEthereumToArbitrum = ({ destinationName, destinationAddress, fr
 
 
     const onBridge = async () => {
-        const signatureData = await onMint()
-
+        const signatureData = await getSignature()
         const signer = provider.getSigner()
-        console.log('signer address', await signer.getAddress())
-        const l2Network = await getL2Network(PROVIDERS.ArbitrumTestnet)
+        const l2Network = await getL2Network(PROVIDERS.Arbitrum)
         const erc20Bridger = new Erc20Bridger(l2Network)
 
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet, // 替换为你的 L1GatewayRouter 合约地址
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
-            signer // 替换为你的以太坊提供者对象
+            signer
         );
 
         let tx
-        // try {
-        const depositRequest = await erc20Bridger.getDepositRequest({
-            l1Provider: signer.provider,
-            l2Provider: PROVIDERS.ArbitrumTestnet,
-            amount: bb(amount),
-            erc20L1Address: ADDRESSES.deriEthereumTestnet,
-            from: await signer.getAddress(),
-            destinationAddress: destinationAddress
-        });
-        console.log("depositRequest", depositRequest)
-        const parsedData = parseOutboundTransferData(depositRequest.txRequest.data);
-        // console.log(parsedData);
+        try {
+            const depositRequest = await erc20Bridger.getDepositRequest({
+                l1Provider: signer.provider,
+                l2Provider: PROVIDERS.Arbitrum,
+                amount: bb(amount),
+                erc20L1Address: ADDRESSES.deriEthereum,
+                from: await signer.getAddress(),
+                destinationAddress: destinationAddress
+            });
+            const parsedData = parseOutboundTransferData(depositRequest.txRequest.data);
+            console.log(parsedData);
 
-        console.log(parsedData.token,
-            parsedData.to,
-            parsedData.amount.toString(),
-            parsedData.maxGas.toString(),
-            parsedData.gasPriceBid.toString(),
-            parsedData.innerData)
+            tx = await executeTx(deriTokenManagerContract.mintAndBridgeToArbitrum, [
+                signatureData.deadline,
+                signatureData.v,
+                signatureData.r,
+                signatureData.s,
+                parsedData.token,
+                parsedData.to,
+                parsedData.amount,
+                parsedData.maxGas,
+                parsedData.gasPriceBid,
+                parsedData.innerData,
+                { value: depositRequest.txRequest.value }
+            ])
 
-
-
-        tx = await executeTx(deriTokenManagerContract.mintAndBridgeToArbitrum, [
-            signatureData.from,
-            signatureData.deadline,
-            signatureData.v,
-            signatureData.r,
-            signatureData.s,
-            parsedData.token,
-            parsedData.to,
-            parsedData.amount,
-            parsedData.maxGas,
-            parsedData.gasPriceBid,
-            parsedData.innerData,
-            { value: depositRequest.txRequest.value }
-        ])
-
-
-
-        // } catch (error) {
-        //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-        //     alert(message)
-        // }
+        } catch (error) {
+            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+            alert(message)
+        }
     }
 
     return (
@@ -391,7 +355,7 @@ const SendDeriRowEthereumToArbitrum = ({ destinationName, destinationAddress, fr
             <td><Address address={destinationAddress} /></td>
             <td>{toBalance}</td>
             <td><Form.Control value={amount} onChange={(e) => setAmount(e.target.value)} /></td>
-            <td><CButton network='Ethereum' text='Mint&Bridge' onClick={onMint} /></td>
+            <td><CButton network='Ethereum' text='Mint&Bridge' onClick={onBridge} /></td>
             <td></td>
         </tr>
     )
@@ -400,16 +364,14 @@ const SendDeriRowEthereumToArbitrum = ({ destinationName, destinationAddress, fr
 const SendDeriRowEthereumToZksync = ({ destinationName, destinationAddress, fromBalance, toBalance }) => {
     const [amount, setAmount] = useState('')
 
-    const onMint = async () => {
+    const getSignature = async () => {
         const signer = provider.getSigner()
-        console.log("signer address", await signer.getAddress())
         const deri = new ethers.Contract(DERI_ADDRESS, DERI_ABI, signer)
-        // const nonce = await deri.nonces(MINTER_ADDRESS)
-        const nonce = 1
+        const nonce = await deri.nonces(ADDRESSES.deriTokenManager)
         const deadline = parseInt(Date.now() / 86400000 + 1) * 86400
         const domain = {
             name: 'Deri',
-            chainId: 5,
+            chainId: 1,
             verifyingContract: DERI_ADDRESS
         }
         const types = {
@@ -421,76 +383,62 @@ const SendDeriRowEthereumToZksync = ({ destinationName, destinationAddress, from
             ]
         }
         const value = {
-            account: MINTER_ADDRESS,
+            account: ADDRESSES.deriTokenManager,
             amount: bb(amount),
             nonce: nonce,
             deadline: deadline
         }
-
-
         const sig = ethers.utils.splitSignature(
             await signer._signTypedData(domain, types, value)
         )
-        console.log("signature", sig)
         return {
-            from: MINTER_ADDRESS,
             deadline: deadline,
             v: sig.v,
             r: sig.r,
             s: sig.s
         }
-        // await executeTx(deri.mint, [MINTER_ADDRESS, bb(amount), deadline, sig.v, sig.r, sig.s])
     }
 
-
     const onBridge = async () => {
-        const signatureData = await onMint()
-
+        const signatureData = await getSignature()
         const signer = provider.getSigner()
-        console.log('signer address', await signer.getAddress())
-        const l2Network = await getL2Network(PROVIDERS.ArbitrumTestnet)
-        const erc20Bridger = new Erc20Bridger(l2Network)
-
         const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManagerTestnet, // 替换为你的 L1GatewayRouter 合约地址
+            ADDRESSES.deriTokenManager,
             DeriTokenManager_ABI,
-            signer // 替换为你的以太坊提供者对象
+            signer
         );
-
         const gasPrice = await provider.getGasPrice()
-        const gasLimit = 1139783
+        const gasLimit = 782563 // actual value 742563
         console.log("gasPrice", gasPrice)
 
         let tx
-        // try {
+        try {
+            const L2TransactionBaseCost = await deriTokenManagerContract.callZksyncL2TransactionBaseCost(
+                ADDRESSES.zksyncDiamondProxy,
+                gasPrice,
+                gasLimit,
+                800)
 
-        const L2TransactionBaseCost = await deriTokenManagerContract.callZksyncL2TransactionBaseCost(
-            ADDRESSES.zksyncDiamondProxyTestnet,
-            gasPrice,
-            gasLimit,
-            800)
+            console.log("L2TransactionBaseCost", L2TransactionBaseCost)
 
-        console.log("L2TransactionBaseCost", L2TransactionBaseCost)
-
-        tx = await executeTx(deriTokenManagerContract.mintAndBridgeToZksync, [
-            signatureData.from,
-            signatureData.deadline,
-            signatureData.v,
-            signatureData.r,
-            signatureData.s,
-            destinationAddress,
-            ADDRESSES.deriEthereumTestnet,
-            bb(amount),
-            gasLimit,
-            800,
-            { value: L2TransactionBaseCost }
-        ])
+            tx = await executeTx(deriTokenManagerContract.mintAndBridgeToZksync, [
+                signatureData.deadline,
+                signatureData.v,
+                signatureData.r,
+                signatureData.s,
+                destinationAddress,
+                ADDRESSES.deriEthereum,
+                bb(amount),
+                gasLimit,
+                800,
+                { value: L2TransactionBaseCost }
+            ])
 
 
-        // } catch (error) {
-        //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-        //     alert(message)
-        // }
+        } catch (error) {
+            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+            alert(message)
+        }
     }
 
     return (
@@ -525,6 +473,7 @@ export const MintAndSend = () => {
             getBalance(ADDRESSES.rewardVaultV2Bsc, 'Bsc'),
             getBalance(ADDRESSES.rewardVaultV2Arbitrum, 'Arbitrum'),
             getBalance(ADDRESSES.uniswapLpStakerArbitrum, 'Arbitrum'),
+            getBalance(ADDRESSES.rewardVaultV2Zksync, 'Zksync'),
         ])
         const results = [
             'senderEthereum',
@@ -533,6 +482,7 @@ export const MintAndSend = () => {
             'rewardVaultV2Bsc',
             'rewardVaultV2Arbitrum',
             'uniswapLpStakerArbitrum',
+            'rewardVaultV2Zksync',
         ].reduce((accumulator, key, idx) => ({ ...accumulator, [key]: values[idx] }), {})
         setBalances(results)
     }, [])
@@ -580,7 +530,7 @@ export const MintAndSend = () => {
                         destinationName='RewardVault V2 (Zksync)'
                         destinationAddress={ADDRESSES.rewardVaultV2Zksync}
                         fromBalance={balances.senderEthereum}
-                        toBalance={balances.uniswapLpStakerArbitrum}
+                        toBalance={balances.rewardVaultV2Zksync}
                     />
                 </tbody>
             </table>

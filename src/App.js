@@ -1,5 +1,6 @@
 import { MintDeri } from './components/MintDeri'
 import { SendDeri } from './components/SendDeri'
+import { MintAndSendTestnet } from './components/MintAndSendTestnet'
 import { MintAndSend } from './components/MintAndSend'
 // import {SwitchOracle} from './components/SwitchOracle'
 import { SetRewardVaultSpeed2 } from './components/SetRewardVaultSpeed2'
@@ -9,7 +10,7 @@ import { BurnDeriArbitrum } from './components/BurnDeriArbitrum'
 function App() {
     return (
         <div className="App">
-            <h3>Deri Auxiliary (20230310)</h3>
+            <h3>Deri Auxiliary (20230529)</h3>
             {/* <MintDeri />
             <SendDeri /> */}
             <MintAndSend />

@@ -9,6 +9,7 @@ export const CHAINID_NETWORK = {
     56: 'Bsc',
     137: 'Polygon',
     42161: 'Arbitrum',
+    324: 'Zksync',
     5: 'Goerli',
     97: 'BscTestnet',
     421613: 'ArbitrumTestnet'
@@ -18,6 +19,7 @@ export const PROVIDERS = {
     Ethereum: new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'),
     Bsc: new ethers.providers.JsonRpcProvider('https://bsc-dataseed1.binance.org/'),
     Arbitrum: new ethers.providers.JsonRpcProvider('https://arb1.arbitrum.io/rpc'),
+    Zksync: new ethers.providers.JsonRpcProvider('https://mainnet.era.zksync.io'),
     Polygon: new ethers.providers.JsonRpcProvider('https://polygon-rpc.com/'),
     Goerli: new ethers.providers.JsonRpcProvider('https://dry-solemn-lambo.ethereum-goerli.quiknode.pro/5143675172d55e2d8866d16c6f177a6adb4d8466/'),
     BscTestnet: new ethers.providers.JsonRpcProvider('https://data-seed-prebsc-1-s3.binance.org:8545/'),
