@@ -811,112 +811,112 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         console.log("gasPrice", origGasPrice.toString(), gasPrice.toString())
 
         let tx
-        try {
-            //arbitrum
-            const depositRequest = await erc20Bridger.getDepositRequest({
-                l1Provider: signer.provider,
-                l2Provider: PROVIDERS.Arbitrum,
-                amount: bb(1),
-                erc20L1Address: ADDRESSES.deriEthereum,
-                from: await signer.getAddress(),
-                destinationAddress: ADDRESSES.rewardVaultV2Arbitrum
-            });
-            const parsedData = parseOutboundTransferData(depositRequest.txRequest.data);
+        // try {
+        //arbitrum
+        const depositRequest = await erc20Bridger.getDepositRequest({
+            l1Provider: signer.provider,
+            l2Provider: PROVIDERS.Arbitrum,
+            amount: bb(1),
+            erc20L1Address: ADDRESSES.deriEthereum,
+            from: await signer.getAddress(),
+            destinationAddress: ADDRESSES.rewardVaultV2Arbitrum
+        });
+        const parsedData = parseOutboundTransferData(depositRequest.txRequest.data);
 
-            const depositRequest2 = await erc20Bridger.getDepositRequest({
-                l1Provider: signer.provider,
-                l2Provider: PROVIDERS.Arbitrum,
-                amount: bb(1),
-                erc20L1Address: ADDRESSES.deriEthereum,
-                from: await signer.getAddress(),
-                destinationAddress: ADDRESSES.uniswapLpStakerArbitrum
-            });
-            const parsedData2 = parseOutboundTransferData(depositRequest2.txRequest.data);
+        const depositRequest2 = await erc20Bridger.getDepositRequest({
+            l1Provider: signer.provider,
+            l2Provider: PROVIDERS.Arbitrum,
+            amount: bb(1),
+            erc20L1Address: ADDRESSES.deriEthereum,
+            from: await signer.getAddress(),
+            destinationAddress: ADDRESSES.uniswapLpStakerArbitrum
+        });
+        const parsedData2 = parseOutboundTransferData(depositRequest2.txRequest.data);
 
-            const L2TransactionBaseCost = await deriTokenManagerContract.callZksyncL2TransactionBaseCost(
-                ADDRESSES.zksyncDiamondProxy,
-                gasPrice,
-                gasLimit,
-                800)
-
-
-            const signature = {
-                amount: bb(state.amount),
-                deadline: signatureData.deadline,
-                v: signatureData.v,
-                r: signatureData.r,
-                s: signatureData.s
-            }
-
-            const arbitrumRewardVaultV2Details = {
-                isArbitrum: true,
-                poolId: 0,
-                _token: parsedData.token,
-                _to: ADDRESSES.rewardVaultV2Arbitrum,
-                _maxGas: parsedData.maxGas,
-                _gasPriceBid: parsedData.gasPriceBid,
-                _value: depositRequest.txRequest.value,
-                _data: parsedData.innerData,
-                _l2Receiver: "0x0000000000000000000000000000000000000000",
-                _l1Token: "0x0000000000000000000000000000000000000000",
-                _l2TxGasLimit: 0,
-                _l2TxGasPerPubdataByte: 0,
-                _refundRecipient: "0x0000000000000000000000000000000000000000"
-            }
-
-            const arbitrumUniswapDetails = {
-                isArbitrum: true,
-                poolId: 1,
-                _token: parsedData2.token,
-                _to: ADDRESSES.uniswapLpStakerArbitrum,
-                _maxGas: parsedData2.maxGas,
-                _gasPriceBid: parsedData2.gasPriceBid,
-                _value: depositRequest2.txRequest.value,
-                _data: parsedData2.innerData,
-                _l2Receiver: "0x0000000000000000000000000000000000000000",
-                _l1Token: "0x0000000000000000000000000000000000000000",
-                _l2TxGasLimit: 0,
-                _l2TxGasPerPubdataByte: 0,
-                _refundRecipient: "0x0000000000000000000000000000000000000000"
-            }
+        const L2TransactionBaseCost = await deriTokenManagerContract.callZksyncL2TransactionBaseCost(
+            ADDRESSES.zksyncDiamondProxy,
+            gasPrice,
+            gasLimit,
+            800)
 
 
-            const zksyncRewardVaultDetails = {
-                isArbitrum: false,
-                poolId: 2,
-                _token: "0x0000000000000000000000000000000000000000",
-                _to: "0x0000000000000000000000000000000000000000",
-                _maxGas: 0,
-                _gasPriceBid: 0,
-                _value: L2TransactionBaseCost,
-                _data: "0x",
-                _l2Receiver: ADDRESSES.rewardVaultV2Zksync,
-                _l1Token: ADDRESSES.deriEthereum,
-                _l2TxGasLimit: gasLimit,
-                _l2TxGasPerPubdataByte: 800,
-                _refundRecipient: "0x0000000000000000000000000000000000000000"
-            }
-
-            console.log("mint all param signature", signature)
-            console.log("mint all param detail", [arbitrumRewardVaultV2Details, arbitrumUniswapDetails, zksyncRewardVaultDetails])
-            const msg_value = arbitrumRewardVaultV2Details._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value)
-            console.log("mint all param msg.value", msg_value.toString())
-
-            const details = [arbitrumRewardVaultV2Details, arbitrumUniswapDetails, zksyncRewardVaultDetails]
-            tx = await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
-                signature,
-                details,
-                { value: msg_value }
-            ])
-            // tx = await executeTx(deriTokenManagerContract.bridgeAll, [
-            //     details,
-            //     { value: msg_value }
-            // ])
-
-        } catch (error) {
-            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-            alert(message)
+        const signature = {
+            amount: totalReward,
+            deadline: signatureData.deadline,
+            v: signatureData.v,
+            r: signatureData.r,
+            s: signatureData.s
         }
+
+        const arbitrumRewardVaultV2Details = {
+            isArbitrum: true,
+            poolId: 0,
+            _token: parsedData.token,
+            _to: ADDRESSES.rewardVaultV2Arbitrum,
+            _maxGas: parsedData.maxGas,
+            _gasPriceBid: parsedData.gasPriceBid,
+            _value: depositRequest.txRequest.value,
+            _data: parsedData.innerData,
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000"
+        }
+
+        const arbitrumUniswapDetails = {
+            isArbitrum: true,
+            poolId: 1,
+            _token: parsedData2.token,
+            _to: ADDRESSES.uniswapLpStakerArbitrum,
+            _maxGas: parsedData2.maxGas,
+            _gasPriceBid: parsedData2.gasPriceBid,
+            _value: depositRequest2.txRequest.value,
+            _data: parsedData2.innerData,
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000"
+        }
+
+
+        const zksyncRewardVaultDetails = {
+            isArbitrum: false,
+            poolId: 2,
+            _token: "0x0000000000000000000000000000000000000000",
+            _to: "0x0000000000000000000000000000000000000000",
+            _maxGas: 0,
+            _gasPriceBid: 0,
+            _value: L2TransactionBaseCost,
+            _data: "0x",
+            _l2Receiver: ADDRESSES.rewardVaultV2Zksync,
+            _l1Token: ADDRESSES.deriEthereum,
+            _l2TxGasLimit: gasLimit,
+            _l2TxGasPerPubdataByte: 800,
+            _refundRecipient: "0x0000000000000000000000000000000000000000"
+        }
+
+        console.log("mint all param signature", signature)
+        console.log("mint all param detail", [arbitrumRewardVaultV2Details, arbitrumUniswapDetails, zksyncRewardVaultDetails])
+        const msg_value = arbitrumRewardVaultV2Details._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value)
+        console.log("mint all param msg.value", msg_value.toString())
+
+        const details = [arbitrumRewardVaultV2Details, arbitrumUniswapDetails, zksyncRewardVaultDetails]
+        tx = await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
+            signature,
+            details,
+            { value: msg_value }
+        ])
+        // tx = await executeTx(deriTokenManagerContract.bridgeAll, [
+        //     details,
+        //     { value: msg_value }
+        // ])
+
+        // } catch (error) {
+        //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+        //     alert(message)
+        // }
     }
 
     return (

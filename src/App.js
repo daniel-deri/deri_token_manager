@@ -13,7 +13,7 @@ function App() {
             {/* <MintDeri /> */}
             {/* <SendDeri /> */}
             <MintAndSendAll />
-            {/* <SetRewardVaultSpeed2 /> */}
+            <SetRewardVaultSpeed2 />
             {/* <BurnDeri/> */}
             {/* <BurnDeriArbitrum/> */}
         </div>
