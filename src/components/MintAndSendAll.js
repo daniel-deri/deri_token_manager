@@ -841,7 +841,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
 
             const signature = {
-                amount: bb(state.amount),
+                amount: totalReward,
                 deadline: signatureData.deadline,
                 v: signatureData.v,
                 r: signatureData.r,
