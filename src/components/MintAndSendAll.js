@@ -927,7 +927,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             <td><Address address={ADDRESSES.deriTokenManager} /></td>
             <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td>
             <td><CButton network='Ethereum' text='Mint&BridgeAll' onClick={onBridge} /></td>
-            <td><CButton network='Ethereum' text='Claim' onClick={onClaim} /></td>
+            <td><CButton network='Ethereum' text='Claim&Send' onClick={onClaim} /></td>
         </tr>
     )
 }
