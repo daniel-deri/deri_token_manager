@@ -9,7 +9,7 @@ import { BurnDeriArbitrum } from './components/BurnDeriArbitrum'
 function App() {
     return (
         <div className="App">
-            <h3>Deri Auxiliary (20230529)</h3>
+            <h3>Deri Auxiliary (20230613)</h3>
             {/* <MintDeri /> */}
             {/* <SendDeri /> */}
             <MintAndSendAll />

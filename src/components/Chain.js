@@ -22,7 +22,7 @@ export const PROVIDERS = {
     Zksync: new ethers.providers.JsonRpcProvider('https://mainnet.era.zksync.io'),
     Polygon: new ethers.providers.JsonRpcProvider('https://polygon-rpc.com/'),
     Goerli: new ethers.providers.JsonRpcProvider('https://dry-solemn-lambo.ethereum-goerli.quiknode.pro/5143675172d55e2d8866d16c6f177a6adb4d8466/'),
-    BscTestnet: new ethers.providers.JsonRpcProvider('https://data-seed-prebsc-1-s3.binance.org:8545/'),
+    BscTestnet: new ethers.providers.JsonRpcProvider('https://data-seed-prebsc-1-s2.binance.org:8545'),
     ArbitrumTestnet: new ethers.providers.JsonRpcProvider('https://goerli-rollup.arbitrum.io/rpc'),
     // Localhost: new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545'),
 }
