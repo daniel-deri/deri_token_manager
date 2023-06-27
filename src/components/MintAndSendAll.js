@@ -819,7 +819,12 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             amount: bb(1),
             erc20L1Address: ADDRESSES.deriEthereum,
             from: await signer.getAddress(),
-            destinationAddress: ADDRESSES.rewardVaultV2Arbitrum
+            destinationAddress: ADDRESSES.rewardVaultV2Arbitrum,
+            retryableGasOverrides: {
+                gasLimit: {
+                    percentIncrease: BigNumber.from('20')
+                },
+            }
         });
         const parsedData = parseOutboundTransferData(depositRequest.txRequest.data);
 
@@ -829,7 +834,12 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             amount: bb(1),
             erc20L1Address: ADDRESSES.deriEthereum,
             from: await signer.getAddress(),
-            destinationAddress: ADDRESSES.uniswapLpStakerArbitrum
+            destinationAddress: ADDRESSES.uniswapLpStakerArbitrum,
+            retryableGasOverrides: {
+                gasLimit: {
+                    percentIncrease: BigNumber.from('20')
+                },
+            }
         });
         const parsedData2 = parseOutboundTransferData(depositRequest2.txRequest.data);
 
