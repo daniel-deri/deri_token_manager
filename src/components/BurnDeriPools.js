@@ -42,6 +42,13 @@ const POOLS = [
         aPool: '0xDE3447Eb47EcDf9B5F90E7A6960a14663916CeE8',
     },
     {
+        version: 'V3 Lite',
+        network: 'Zksync',
+        bTokenSymbol: 'USDC',
+        aSigner: '',
+        aPool: '0x9F63A5f24625d8be7a34e15477a7d6d66e99582e',
+    },
+    {
         version: 'V3 Duet',
         network: 'Arbitrum',
         bTokenSymbol: 'USDC',
