@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ethers, logger } from 'ethers'
+import { ethers} from 'ethers'
 import { BigNumber } from 'ethers';
 import { Form } from 'react-bootstrap'
 import { provider, PROVIDERS, bb, nn, executeTx, connectMetaMask } from './Chain'
@@ -488,7 +488,6 @@ const DERI_ABI = [
     'function mint(address account, uint256 amount)'
 ]
 
-
 const ADDRESSES = {
     sender: '0x919735d147185788D8A29942baC49A5164A1Bfd6',
     deriEthereum: '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9',
@@ -506,13 +505,13 @@ const ADDRESSES = {
     wormholeBsc: '0x15a5969060228031266c64274a54e02Fbd924AbF',
     database: '0xd8137F05c1F432A80525053c473d0e286c4F46f0',
 
-    deriTokenManager: "0x9c3001141437cba96840c81d519bff7c694328ce",
+    deriTokenManager: "0x9c3001141437cbA96840c81d519BFF7C694328CE",
     arbitrumGatewayRouter: '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef',
     arbitrumGateway: '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
     zksyncL1Bridge: '0x57891966931Eb4Bb6FB81430E6cE0A03AAbDe063',
     zksyncDiamondProxy: "0x32400084c286cf3e17e7b677ea9583e60a000324",
     // TODO
-    lineaBridge: "0x4f824672c85e4381716cf16880245474ea8ee94d",
+    lineaBridge: "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
 }
 
 const ApproveBridges = () => {
@@ -524,23 +523,19 @@ const ApproveBridges = () => {
     );
 
     const onApproveZksyncBridge = async () => {
-        let tx
-        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.zksyncL1Bridge])
+        await executeTx(deriTokenManagerContract.approve, [ADDRESSES.zksyncL1Bridge])
     }
 
     const onApproveArbitrumBridge = async () => {
-        let tx
-        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.arbitrumGateway])
+        await executeTx(deriTokenManagerContract.approve, [ADDRESSES.arbitrumGateway])
     }
 
     const onApproveWormhole = async () => {
-        let tx
-        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.wormholeEthereum])
+        await executeTx(deriTokenManagerContract.approve, [ADDRESSES.wormholeEthereum])
     }
 
     const onApproveLinea = async () => {
-        let tx
-        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.lineaBridge])
+        await executeTx(deriTokenManagerContract.approve, [ADDRESSES.lineaBridge])
     }
 
 
@@ -549,7 +544,7 @@ const ApproveBridges = () => {
             <tr>
                 <td>Approve Bridges</td>
                 <td><CButton network='Ethereum' text='Connect' onClick={connectMetaMask} /></td>
-                <td><CButton network='Ethereum' text='Approve Wormhole Bridge' onClick={onApproveWormhole} /></td>
+                {/* <td><CButton network='Ethereum' text='Approve Wormhole Bridge' onClick={onApproveWormhole} /></td> */}
                 <td><CButton network='Ethereum' text='Approve Arbitrum Bridge' onClick={onApproveArbitrumBridge} /></td>
                 <td><CButton network='Ethereum' text='Approve zkSync Bridge' onClick={onApproveZksyncBridge} /></td>
                 <td><CButton network='Ethereum' text='Approve Linea Bridge' onClick={onApproveLinea} /></td>
@@ -560,8 +555,6 @@ const ApproveBridges = () => {
 
 
 const SetRewardPerWeek = () => {
-    const signer = provider.getSigner()
-
     const { suggestedSendAmount, setSuggestedSendAmount } = useContext(SuggestedSendAmountContext);
 
     const vaults = [
@@ -569,20 +562,6 @@ const SetRewardPerWeek = () => {
         { id: 1, network: 'Zksync', name: 'zksyncRewardVault', title: 'RewardVault (Zksync)' },
         { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' }
     ];
-
-    const [rewards, setReward] = useState({
-        arbitrumRewardVault: '',
-        zksyncRewardVault: '',
-        lineaRewardVault: '',
-        arbitrumUniswap: '',
-    });
-
-    const [newReward, setNewReward] = useState({
-        arbitrumRewardVault: '',
-        zksyncRewardVault: '',
-        lineaRewardVault: '',
-        arbitrumUniswap: '',
-    });
 
     return (
         <tbody>
@@ -630,13 +609,13 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         const amount = Object.values(suggestedSendAmount).reduce((accumulator, currentValue) => {
             // Parse the current value as a number, and if it's a valid number, add it to the accumulator
             // const numericValue = (currentValue);
-            return Number(accumulator) + Number(currentValue);
+            return Number(accumulator) + Number(currentValue)
         }, 0);
         console.log('amount', amount)
-        const totalAmount = amount + 20000
-        setTotalReward(totalAmount);
+        const totalAmount = amount
+        setTotalReward(bb(totalAmount));
         console.log("totalReward", totalAmount)
-    }, []);
+    }, [suggestedSendAmount]);
 
     useEffect(() => {
         updateSignature()
@@ -683,7 +662,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
     const parseOutboundTransferData = (data) => {
         const signer = provider.getSigner()
-        const abiCoder = ethers.utils.defaultAbiCoder;
+        // const abiCoder = ethers.utils.defaultAbiCoder;
         const l1GatewayRouterContract = new ethers.Contract(
             ADDRESSES.arbitrumGatewayRouter,
             L1GatewayRouter_ABI,
@@ -707,33 +686,33 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         };
     }
 
-    const onClaim = async () => {
-        const signer = provider.getSigner()
-        const deriTokenManagerBNBContract = new ethers.Contract(
-            ADDRESSES.deriTokenManager,
-            DeriTokenManagerBNB_ABI,
-            signer
-        );
+    // const onClaim = async () => {
+    //     const signer = provider.getSigner()
+    //     const deriTokenManagerBNBContract = new ethers.Contract(
+    //         ADDRESSES.deriTokenManager,
+    //         DeriTokenManagerBNB_ABI,
+    //         signer
+    //     );
 
-        console.log("signature", state.signature)
+    //     console.log("signature", state.signature)
 
-        let tx
-        try {
-            tx = await executeTx(deriTokenManagerBNBContract.claimAndSendBnb, [
-                state.signature.amount,
-                state.signature.fromChainId,
-                state.signature.fromWormhole,
-                state.signature.nonce,
-                state.signature.v,
-                state.signature.r,
-                state.signature.s,
-            ])
+    //     let tx
+    //     try {
+    //         tx = await executeTx(deriTokenManagerBNBContract.claimAndSendBnb, [
+    //             state.signature.amount,
+    //             state.signature.fromChainId,
+    //             state.signature.fromWormhole,
+    //             state.signature.nonce,
+    //             state.signature.v,
+    //             state.signature.r,
+    //             state.signature.s,
+    //         ])
 
-        } catch (error) {
-            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-            alert(message)
-        }
-    }
+    //     } catch (error) {
+    //         const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+    //         alert(message)
+    //     }
+    // }
 
 
     const onBridge = async () => {
@@ -826,7 +805,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
         const arbitrumUniswapDetails = {
             poolChain: 0,
-            _amount: bb(10000),
+            _amount: bb(20000),
             _token: parsedData2.token,
             _to: ADDRESSES.uniswapLpStakerArbitrum,
             _maxGas: parsedData2.maxGas,
@@ -850,7 +829,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _gasPriceBid: 0,
             _value: L2TransactionBaseCost,
             _data: "0x",
-            _l2Receiver: ADDRESSES.rewardVaultV2Zksync,
+            _l2Receiver: ADDRESSES.rewardVaultZksync,
             _l1Token: ADDRESSES.deriEthereum,
             _l2TxGasLimit: gasLimit,
             _l2TxGasPerPubdataByte: 800,
@@ -859,7 +838,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
         const lineaRewardVaultDetails = {
             poolChain: 2,
-            _amount: bb(5),
+            _amount: bb(suggestedSendAmount.Linea),
             _token: ADDRESSES.deriEthereum,
             _to: ADDRESSES.rewardVaultLinea,
             _maxGas: 0,
@@ -876,13 +855,15 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         console.log('lineaRewardVaultDetails', lineaRewardVaultDetails)
 
         console.log("mint all param signature", signature)
-        console.log("mint all param detail", [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails])
-        const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
+        console.log("mint all param detail", [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails])
+        // const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
+        const msg_value = arbitrumRewardVaultDetails._value.add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
         console.log("mint all param msg.value", msg_value.toString())
 
-        const details = [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
+        // const details = [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
+        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
         // const details = [lineaRewardVaultDetails]
-        tx = await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
+        await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
             signature,
             details,
             { value: msg_value }
@@ -901,7 +882,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
     return (
         <tr>
             <td>Mint Amount</td>
-            <td>{totalReward}</td>
+            <td>{nn(totalReward)}</td>
             <td>DeriTokenManager</td>
             <td><Address address={ADDRESSES.deriTokenManager} /></td>
             {/* <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td> */}

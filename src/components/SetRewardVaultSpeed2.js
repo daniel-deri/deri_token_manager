@@ -64,21 +64,22 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
         const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, PROVIDERS[network])
         const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
         console.log(network, 'curRewardPerSecond', curRewardPerSecond)
-        const totalUnclaimed = nn(await vault.totalUnclaimed(gatewayAddress))
+        const totalUnclaimed = Math.ceil(nn(await vault.totalUnclaimed(gatewayAddress)))
         console.log(network, 'totalUnclaimed', totalUnclaimed)
         
         const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])
         const gatewayLiquidity = nn((await gateway.getGatewayState()).totalLiquidity)
         
         const deri = new ethers.Contract(deriAddress, ERC20_ABI, PROVIDERS[network])
-        const vaultBalance = nn(await deri.balanceOf(rewardVaultAddress))
+        const vaultBalance = Math.ceil(nn(await deri.balanceOf(rewardVaultAddress)))
 
         const engine = new ethers.Contract(ENGINEADDRESS, ENGINE_ABI, PROVIDERS['Dchain'])
         const totalLiquidity = nn((await engine.getEngineState()).totalLiquidity)
 
         const rewardPerWeek = Math.ceil(gatewayLiquidity * curRewardPerSecond * 86400 * 7 / totalLiquidity)
         console.log(Number(totalUnclaimed)+ Number(rewardPerWeek), Number(vaultBalance))
-        const _suggestedSendAmount = Math.max(Number(totalUnclaimed) + Number(rewardPerWeek) - Number(vaultBalance), 0)
+        // const _suggestedSendAmount = Math.max(Number(totalUnclaimed) + Number(rewardPerWeek) - Number(vaultBalance), 0)
+        const _suggestedSendAmount = Math.max(Math.ceil(totalUnclaimed - vaultBalance), 0)
         setSuggestedAmount(_suggestedSendAmount)
         combine({[network]: _suggestedSendAmount })
         setState({ ...state, curRewardPerSecond, totalUnclaimed, gatewayLiquidity, vaultBalance, totalLiquidity, rewardPerWeek})
