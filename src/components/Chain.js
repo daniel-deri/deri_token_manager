@@ -12,7 +12,9 @@ export const CHAINID_NETWORK = {
     324: 'Zksync',
     5: 'Goerli',
     97: 'BscTestnet',
-    421613: 'ArbitrumTestnet'
+    421613: 'ArbitrumTestnet',
+    59144: 'Linea',
+    20231119:'Dchain'
 }
 
 export const PROVIDERS = {
@@ -24,8 +26,11 @@ export const PROVIDERS = {
     Goerli: new ethers.providers.JsonRpcProvider('https://dry-solemn-lambo.ethereum-goerli.quiknode.pro/5143675172d55e2d8866d16c6f177a6adb4d8466/'),
     BscTestnet: new ethers.providers.JsonRpcProvider('https://data-seed-prebsc-1-s2.binance.org:8545'),
     ArbitrumTestnet: new ethers.providers.JsonRpcProvider('https://goerli-rollup.arbitrum.io/rpc'),
+    Linea: new ethers.providers.JsonRpcBatchProvider('https://linea-mainnet.infura.io/v3/7969d99b41d84a06a6809668daaa4a46'),
+    Dchain: new ethers.providers.JsonRpcBatchProvider('https://rpc-dchain.deri.io')
     // Localhost: new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545'),
 }
+
 
 export const bb = (value, decimals = 18) => {
     return value && ethers.utils.parseUnits(value.toString(), decimals)

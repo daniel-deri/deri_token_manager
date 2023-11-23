@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ethers } from 'ethers'
+import { ethers, logger } from 'ethers'
 import { BigNumber } from 'ethers';
 import { Form } from 'react-bootstrap'
 import { provider, PROVIDERS, bb, nn, executeTx, connectMetaMask } from './Chain'
 import { Address } from './Address'
 import { CButton } from './CButton'
 import { getL2Network, Erc20Bridger } from '@arbitrum/sdk'
+import { useContext } from 'react';
+import { SuggestedSendAmountContext } from './Context';
 
 const L1GatewayRouter_ABI = [
     'function outboundTransfer(address _token, address _to, uint256 _amount, uint256 _maxGas, uint256 _gasPriceBid, bytes calldata _data)'
@@ -13,16 +15,39 @@ const L1GatewayRouter_ABI = [
 
 const DeriTokenManager_ABI = [
     {
+        "inputs": [],
+        "name": "OnlyAdmin",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "Reentry",
+        "type": "error"
+    },
+    {
         "anonymous": false,
         "inputs": [
             {
-                "indexed": true,
+                "indexed": false,
                 "internalType": "address",
                 "name": "newAdmin",
                 "type": "address"
             }
         ],
         "name": "NewAdmin",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "newImplementation",
+                "type": "address"
+            }
+        ],
+        "name": "NewImplementation",
         "type": "event"
     },
     {
@@ -39,36 +64,14 @@ const DeriTokenManager_ABI = [
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "approveAll",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "approveGateway",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "approveGatewayRouter",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "approveWormholeEthereum",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "approveZkBridge",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newBridge",
+                "type": "address"
+            }
+        ],
+        "name": "approve",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -78,13 +81,13 @@ const DeriTokenManager_ABI = [
             {
                 "components": [
                     {
-                        "internalType": "bool",
-                        "name": "isArbitrum",
-                        "type": "bool"
+                        "internalType": "uint256",
+                        "name": "poolChain",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "poolId",
+                        "name": "_amount",
                         "type": "uint256"
                     },
                     {
@@ -143,7 +146,7 @@ const DeriTokenManager_ABI = [
                         "type": "address"
                     }
                 ],
-                "internalType": "struct DeriTokenManager.CrossChainDetails[]",
+                "internalType": "struct DeriTokenManagerImplementation.CrossChainDetails[]",
                 "name": "details",
                 "type": "tuple[]"
             }
@@ -188,6 +191,19 @@ const DeriTokenManager_ABI = [
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "implementation",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "components": [
@@ -217,20 +233,20 @@ const DeriTokenManager_ABI = [
                         "type": "bytes32"
                     }
                 ],
-                "internalType": "struct DeriTokenManager.Signature",
+                "internalType": "struct DeriTokenManagerImplementation.Signature",
                 "name": "signature",
                 "type": "tuple"
             },
             {
                 "components": [
                     {
-                        "internalType": "bool",
-                        "name": "isArbitrum",
-                        "type": "bool"
+                        "internalType": "uint256",
+                        "name": "poolChain",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "poolId",
+                        "name": "_amount",
                         "type": "uint256"
                     },
                     {
@@ -289,7 +305,7 @@ const DeriTokenManager_ABI = [
                         "type": "address"
                     }
                 ],
-                "internalType": "struct DeriTokenManager.CrossChainDetails[]",
+                "internalType": "struct DeriTokenManagerImplementation.CrossChainDetails[]",
                 "name": "details",
                 "type": "tuple[]"
             }
@@ -297,25 +313,6 @@ const DeriTokenManager_ABI = [
         "name": "mintAndBridgeAll",
         "outputs": [],
         "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "rewardPerWeeks",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -334,30 +331,12 @@ const DeriTokenManager_ABI = [
     {
         "inputs": [
             {
-                "internalType": "uint256[]",
-                "name": "_rewardPerWeek",
-                "type": "uint256[]"
+                "internalType": "address",
+                "name": "newImplementation",
+                "type": "address"
             }
         ],
-        "name": "setRewardPerWeek",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "poolId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_rewardPerWeek",
-                "type": "uint256"
-            }
-        ],
-        "name": "setRewardPerWeek",
+        "name": "setImplementation",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -516,24 +495,24 @@ const ADDRESSES = {
     deriBsc: '0xe60eaf5A997DFAe83739e035b005A33AfdCc6df5',
     deriArbitrum: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
     deriZksync: '0x140D5bc5b62d6cB492B1A475127F50d531023803',
-    miningVaultEthereum: '0x7826Ef8Da65494EA21D64D8E6A76AB1BED042FD8',
-    miningVaultBsc: '0x6C8d3F31b2ad1AE997Afa20EAd88cb67E93C6E17',
-    rewardVaultBscMain: '0x34Aa81135b1673Daaf7A0B71867c0e1b3D40941c',
-    rewardVaultBscInno: '0x78b84262e7E4f61e08970E48cf3Ba4b0d8377336',
-    rewardVaultArbitrumMain: '0x95dCE894446580Ef72Dd1d3016097cBf0D01ad91',
-    rewardVaultV2Bsc: '0x57b2cfAC46F0521957929a70ae6faDCEf2297740',
-    rewardVaultV2Arbitrum: '0xae77aA30a077bEa1E62616E70c60C56C04DFF4E7',
-    rewardVaultV2Zksync: '0x77a7f94b3469E814AD092B1c3f1Fa623B2e4DE3d',
+    deriLinea: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A',
+
+    rewardVaultArbitrum: '0x0a79e067cec0Da906D01463e9cC6D0f96E5Cfc08',
+    rewardVaultZksync: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
+    rewardVaultLinea: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
     uniswapLpStakerArbitrum: '0x175Fe9E3415D91F00E6882bA052e9c3E2c2A355a',
+
     wormholeEthereum: '0x6874640cC849153Cb3402D193C33c416972159Ce',
     wormholeBsc: '0x15a5969060228031266c64274a54e02Fbd924AbF',
     database: '0xd8137F05c1F432A80525053c473d0e286c4F46f0',
 
-    deriTokenManager: "0x4f824672c85e4381716cf16880245474ea8ee94d",
+    deriTokenManager: "0x9c3001141437cba96840c81d519bff7c694328ce",
     arbitrumGatewayRouter: '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef',
     arbitrumGateway: '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
     zksyncL1Bridge: '0x57891966931Eb4Bb6FB81430E6cE0A03AAbDe063',
-    zksyncDiamondProxy: "0x32400084c286cf3e17e7b677ea9583e60a000324"
+    zksyncDiamondProxy: "0x32400084c286cf3e17e7b677ea9583e60a000324",
+    // TODO
+    lineaBridge: "0x4f824672c85e4381716cf16880245474ea8ee94d",
 }
 
 const ApproveBridges = () => {
@@ -546,22 +525,22 @@ const ApproveBridges = () => {
 
     const onApproveZksyncBridge = async () => {
         let tx
-        tx = await executeTx(deriTokenManagerContract.approveZkBridge, [])
+        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.zksyncL1Bridge])
     }
 
     const onApproveArbitrumBridge = async () => {
         let tx
-        tx = await executeTx(deriTokenManagerContract.approveGateway, [])
+        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.arbitrumGateway])
     }
 
     const onApproveWormhole = async () => {
         let tx
-        tx = await executeTx(deriTokenManagerContract.approveWormholeEthereum, [])
+        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.wormholeEthereum])
     }
 
-    const onApproveAll = async () => {
+    const onApproveLinea = async () => {
         let tx
-        tx = await executeTx(deriTokenManagerContract.approveAll, [])
+        tx = await executeTx(deriTokenManagerContract.approve, [ADDRESSES.lineaBridge])
     }
 
 
@@ -573,7 +552,7 @@ const ApproveBridges = () => {
                 <td><CButton network='Ethereum' text='Approve Wormhole Bridge' onClick={onApproveWormhole} /></td>
                 <td><CButton network='Ethereum' text='Approve Arbitrum Bridge' onClick={onApproveArbitrumBridge} /></td>
                 <td><CButton network='Ethereum' text='Approve zkSync Bridge' onClick={onApproveZksyncBridge} /></td>
-                <td><CButton network='Ethereum' text='Approve All' onClick={onApproveAll} /></td>
+                <td><CButton network='Ethereum' text='Approve Linea Bridge' onClick={onApproveLinea} /></td>
             </tr>
         </tbody>
     )
@@ -583,89 +562,61 @@ const ApproveBridges = () => {
 const SetRewardPerWeek = () => {
     const signer = provider.getSigner()
 
+    const { suggestedSendAmount, setSuggestedSendAmount } = useContext(SuggestedSendAmountContext);
+
     const vaults = [
-        { id: 0, name: 'arbitrumRewardVaultV2', title: 'RewardVault V2 (Arbitrum)' },
-        { id: 1, name: 'arbitrumUniswap', title: 'Uniswap (Arbitrum)' },
-        { id: 2, name: 'zksyncRewardVaultV2', title: 'RewardVault V2 (Zksync)' },
-        { id: 3, name: 'bnbRewardVaultV2', title: 'RewardVault V2 (BNB)' },
+        { id: 0, network: 'Arbitrum', name: 'arbitrumRewardVault', title: 'RewardVault (Arbitrum)' },
+        { id: 1, network: 'Zksync', name: 'zksyncRewardVault', title: 'RewardVault (Zksync)' },
+        { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' }
     ];
 
     const [rewards, setReward] = useState({
-        arbitrumRewardVaultV2: '',
+        arbitrumRewardVault: '',
+        zksyncRewardVault: '',
+        lineaRewardVault: '',
         arbitrumUniswap: '',
-        zksyncRewardVaultV2: '',
-        bnbRewardVaultV2: '',
     });
 
     const [newReward, setNewReward] = useState({
-        arbitrumRewardVaultV2: '',
+        arbitrumRewardVault: '',
+        zksyncRewardVault: '',
+        lineaRewardVault: '',
         arbitrumUniswap: '',
-        zksyncRewardVaultV2: '',
-        bnbRewardVaultV2: '',
     });
-
-    const updateRewardPerWeek = useCallback(async () => {
-        const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManager,
-            DeriTokenManager_ABI,
-            PROVIDERS.Ethereum
-        );
-        const rewards = {};
-        for (const vault of vaults) {
-            rewards[vault.name] = nn(await deriTokenManagerContract.rewardPerWeeks(vault.id));
-        }
-        setReward(rewards);
-        console.log("rewards", rewards)
-    }, []);
-
-    useEffect(() => {
-        updateRewardPerWeek()
-    }, [updateRewardPerWeek])
-
-
-    const onSetRewardPerWeek = async (id, newRewardPerWeek) => {
-        const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManager,
-            DeriTokenManager_ABI,
-            signer
-        );
-        console.log("onSetRewardPerWeek", id, bb(newRewardPerWeek))
-        const tx = await executeTx(deriTokenManagerContract['setRewardPerWeek(uint256,uint256)'], [id, bb(newRewardPerWeek)]);
-        // Update the rewards after setting the new reward
-        updateRewardPerWeek();
-    };
-
 
     return (
         <tbody>
             <tr>
                 <td>Pool</td>
                 <td>RewardPerWeek</td>
-                <td></td>
-                <td></td>
+                <td>SetReward</td>
             </tr>
             {vaults.map((vault) => (
                 <tr key={vault.id}>
                     <td>{vault.title}</td>
-                    <td>{rewards[vault.name]}</td>
+                    <td>{suggestedSendAmount[vault.network]}</td>
                     <td><Form.Control
                         type="text"
                         onChange={event => {
-                            setNewReward(prevState => ({
+                            setSuggestedSendAmount(prevState => ({
                                 ...prevState,
-                                [vault.name]: event.target.value,
+                                [vault.network]: event.target.value,
                             }));
                         }}
                     /></td>
-                    <td><CButton network='Ethereum' text='Set' onClick={() => onSetRewardPerWeek(vault.id, newReward[vault.name])} /></td>
                 </tr>
             ))}
+            <tr>
+                <td>Uniswap (Arbitrum)</td>
+                <td>20000</td>
+            </tr>
         </tbody>
     )
 }
 
 
 const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBalance, toBalance }) => {
+    const {suggestedSendAmount, setSuggestedSendAmount } = useContext(SuggestedSendAmountContext);
     const [state, setState] = useState({ amount: '', signature: Object })
     const [totalReward, setTotalReward] = useState(0);
 
@@ -676,30 +627,21 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
     }, [])
 
     const updateRewardPerWeek = useCallback(async () => {
-        const deriTokenManagerContract = new ethers.Contract(
-            ADDRESSES.deriTokenManager,
-            DeriTokenManager_ABI,
-            PROVIDERS.Ethereum
-        );
-        const vaults = [
-            { id: 0, name: 'arbitrumRewardVaultV2', title: 'RewardVault V2 (Arbitrum)' },
-            { id: 1, name: 'arbitrumUniswap', title: 'Uniswap (Arbitrum)' },
-            { id: 2, name: 'zksyncRewardVaultV2', title: 'RewardVault V2 (Zksync)' },
-            { id: 3, name: 'bnbRewardVaultV2', title: 'RewardVault V2 (BNB)' },
-        ];
-        const rewards = await Promise.all(vaults.map(async vault => {
-            return await deriTokenManagerContract.rewardPerWeeks(vault.id);
-        }));
-
-        const amount = rewards.reduce((acc, reward) => acc.add(reward), ethers.BigNumber.from(0));
-        setTotalReward(amount);
-        console.log("totalReward", amount)
+        const amount = Object.values(suggestedSendAmount).reduce((accumulator, currentValue) => {
+            // Parse the current value as a number, and if it's a valid number, add it to the accumulator
+            // const numericValue = (currentValue);
+            return Number(accumulator) + Number(currentValue);
+        }, 0);
+        console.log('amount', amount)
+        const totalAmount = amount + 20000
+        setTotalReward(totalAmount);
+        console.log("totalReward", totalAmount)
     }, []);
 
     useEffect(() => {
         updateSignature()
         updateRewardPerWeek()
-    }, [updateSignature, updateRewardPerWeek])
+    }, [updateSignature, updateRewardPerWeek, suggestedSendAmount])
 
 
 
@@ -813,13 +755,14 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         let tx
         // try {
         //arbitrum
+        console.log('signer address', await signer.getAddress())
         const depositRequest = await erc20Bridger.getDepositRequest({
             l1Provider: signer.provider,
             l2Provider: PROVIDERS.Arbitrum,
             amount: bb(1),
             erc20L1Address: ADDRESSES.deriEthereum,
             from: await signer.getAddress(),
-            destinationAddress: ADDRESSES.rewardVaultV2Arbitrum,
+            destinationAddress: ADDRESSES.rewardVaultArbitrum,
             retryableGasOverrides: {
                 gasLimit: {
                     percentIncrease: BigNumber.from('20')
@@ -827,6 +770,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             }
         });
         const parsedData = parseOutboundTransferData(depositRequest.txRequest.data);
+        console.log('parsedData', parsedData)
 
         const depositRequest2 = await erc20Bridger.getDepositRequest({
             l1Provider: signer.provider,
@@ -842,6 +786,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             }
         });
         const parsedData2 = parseOutboundTransferData(depositRequest2.txRequest.data);
+        console.log('parsedData2', parsedData2)
 
         const L2TransactionBaseCost = await deriTokenManagerContract.callZksyncL2TransactionBaseCost(
             ADDRESSES.zksyncDiamondProxy,
@@ -849,6 +794,11 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             gasLimit,
             800)
 
+
+        const lineaGasUsage = 731989
+        const lineGasPrice = await PROVIDERS.Linea.getGasPrice();
+        const lineaValue = lineaGasUsage * lineGasPrice
+        console.log('linea', lineGasPrice, lineGasPrice, lineaValue)
 
         const signature = {
             amount: totalReward,
@@ -858,11 +808,11 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             s: signatureData.s
         }
 
-        const arbitrumRewardVaultV2Details = {
-            isArbitrum: true,
-            poolId: 0,
+        const arbitrumRewardVaultDetails = {
+            poolChain: 0,
+            _amount: bb(suggestedSendAmount.Arbitrum),
             _token: parsedData.token,
-            _to: ADDRESSES.rewardVaultV2Arbitrum,
+            _to: ADDRESSES.rewardVaultArbitrum,
             _maxGas: parsedData.maxGas,
             _gasPriceBid: parsedData.gasPriceBid,
             _value: depositRequest.txRequest.value,
@@ -875,8 +825,8 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         }
 
         const arbitrumUniswapDetails = {
-            isArbitrum: true,
-            poolId: 1,
+            poolChain: 0,
+            _amount: bb(10000),
             _token: parsedData2.token,
             _to: ADDRESSES.uniswapLpStakerArbitrum,
             _maxGas: parsedData2.maxGas,
@@ -892,8 +842,8 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
 
         const zksyncRewardVaultDetails = {
-            isArbitrum: false,
-            poolId: 2,
+            poolChain: 1,
+            _amount: bb(suggestedSendAmount.Zksync),
             _token: "0x0000000000000000000000000000000000000000",
             _to: "0x0000000000000000000000000000000000000000",
             _maxGas: 0,
@@ -907,12 +857,31 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _refundRecipient: "0x0000000000000000000000000000000000000000"
         }
 
+        const lineaRewardVaultDetails = {
+            poolChain: 2,
+            _amount: bb(5),
+            _token: ADDRESSES.deriEthereum,
+            _to: ADDRESSES.rewardVaultLinea,
+            _maxGas: 0,
+            _gasPriceBid: 0,
+            _value: lineaValue,
+            _data: "0x",
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000"
+        }
+
+        console.log('lineaRewardVaultDetails', lineaRewardVaultDetails)
+
         console.log("mint all param signature", signature)
-        console.log("mint all param detail", [arbitrumRewardVaultV2Details, arbitrumUniswapDetails, zksyncRewardVaultDetails])
-        const msg_value = arbitrumRewardVaultV2Details._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value)
+        console.log("mint all param detail", [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails])
+        const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
         console.log("mint all param msg.value", msg_value.toString())
 
-        const details = [arbitrumRewardVaultV2Details, arbitrumUniswapDetails, zksyncRewardVaultDetails]
+        const details = [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
+        // const details = [lineaRewardVaultDetails]
         tx = await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
             signature,
             details,
@@ -920,7 +889,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         ])
         // tx = await executeTx(deriTokenManagerContract.bridgeAll, [
         //     details,
-        //     { value: msg_value }
+        //     { value: lineaRewardVaultDetails._value}
         // ])
 
         // } catch (error) {
@@ -932,12 +901,12 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
     return (
         <tr>
             <td>Mint Amount</td>
-            <td>{nn(totalReward)}</td>
+            <td>{totalReward}</td>
             <td>DeriTokenManager</td>
             <td><Address address={ADDRESSES.deriTokenManager} /></td>
-            <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td>
+            {/* <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td> */}
             <td><CButton network='Ethereum' text='Mint&BridgeAll' onClick={onBridge} /></td>
-            <td><CButton network='Bsc' text='Claim&Send' onClick={onClaim} /></td>
+            {/* <td><CButton network='Bsc' text='Claim&Send' onClick={onClaim} /></td> */}
         </tr>
     )
 }

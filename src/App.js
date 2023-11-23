@@ -5,18 +5,23 @@ import { MintAndSendAll } from './components/MintAndSendAll'
 import { SetRewardVaultSpeed2 } from './components/SetRewardVaultSpeed2'
 import { BurnDeri } from './components/BurnDeri'
 import { BurnDeriArbitrum } from './components/BurnDeriArbitrum'
+import { SuggestedSendAmountProvider } from './components/Context'
+import React, { createContext, useState, useContext } from 'react';
+
 
 function App() {
     return (
-        <div className="App">
-            <h3>Deri Auxiliary (20230911)</h3>
-            <MintAndSendAll />
-            {/* <MintDeri/> */}
-            {/* <SendDeri/> */}
-            <SetRewardVaultSpeed2 />
-            <BurnDeri />
-            <BurnDeriArbitrum />
-        </div>
+        <SuggestedSendAmountProvider>
+            <div className="App">
+                <h3>Deri V4 Auxiliary (20231123)</h3>
+                <MintAndSendAll />
+                {/* <MintDeri/> */}
+                {/* <SendDeri/> */}
+                <SetRewardVaultSpeed2 />
+                <BurnDeri />
+                <BurnDeriArbitrum />
+            </div>
+        </SuggestedSendAmountProvider>
     )
 }
 

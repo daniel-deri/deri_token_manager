@@ -1,59 +1,88 @@
-import {useState, useEffect, useCallback} from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {ethers} from 'ethers'
 import {Form} from 'react-bootstrap'
 import {PROVIDERS, provider,  bb, nn, executeTx} from './Chain'
 import {Address} from './Address'
 import {CButton} from './CButton'
+import { useContext } from 'react';
+import { SuggestedSendAmountContext } from './Context';
+
 
 const POOLS = [
     {
-        network: 'Bsc',
-        poolName: 'Main',
-        poolAddress: '0x243681B8Cd79E3823fF574e07B2378B8Ab292c1E',
-        rewardVaultAddress: '0x57b2cfAC46F0521957929a70ae6faDCEf2297740',
-        signerAddress: '0x6E72d826fDA933FAb33C10D2E91716216Ddeb13B'
-    },
-    {
-        network: 'Bsc',
-        poolName: 'Inno',
-        poolAddress: '0xD2D950e338478eF7FeB092F840920B3482FcaC40',
-        rewardVaultAddress: '0x57b2cfAC46F0521957929a70ae6faDCEf2297740',
-        signerAddress: '0x6E72d826fDA933FAb33C10D2E91716216Ddeb13B'
-    },
-    {
-        network: 'Bsc',
-        poolName: 'Lite',
-        poolAddress: '0x1eF92eDA3CFeefb8Dae0DB4507f860d3b73f29BA',
-        rewardVaultAddress: '0x57b2cfAC46F0521957929a70ae6faDCEf2297740',
-        signerAddress: '0x6E72d826fDA933FAb33C10D2E91716216Ddeb13B'
-    },
-    {
         network: 'Arbitrum',
         poolName: 'Main',
-        poolAddress: '0xDE3447Eb47EcDf9B5F90E7A6960a14663916CeE8',
-        rewardVaultAddress: '0xae77aA30a077bEa1E62616E70c60C56C04DFF4E7',
-        signerAddress: '0xD7790449c2c649E84d9e2814494d60256F842Deb'
+        gatewayAddress: '0xCcAcF05a3cb1770f9A5B5A8AA219af1aC0C5E26b',
+        rewardVaultAddress: '0x0a79e067cec0Da906D01463e9cC6D0f96E5Cfc08',
+        deriAddress: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12'
     },
     {
-        network: 'zkSync',
+        network: 'Zksync',
         poolName: 'Main',
-        poolAddress: '0x9F63A5f24625d8be7a34e15477a7d6d66e99582e',
-        rewardVaultAddress: '0x77a7f94b3469E814AD092B1c3f1Fa623B2e4DE3d',
-        signerAddress: '0x1C4C75D4Ef122dB3Da00473407d4a8650a7ECB55'
-    }
-]
-const REWARD_VAULT_ABI = [
-    'function vaultInfo(address _pool) view returns (uint256 rewardPerSecond, uint256 lastRewardTimestamp, uint256 accRewardPerB0Liquidity, uint256 accRewardPerBXLiquidity, uint256 totalLiquidityB0)',
-    'function setRewardPerSecond(address _pool, uint256 _rewardPerSecond)'
+        gatewayAddress: '0x34FD72D2053339EA4EB1a8836CF50Ebce91962D0',
+        rewardVaultAddress: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
+        deriAddress: '0x140D5bc5b62d6cB492B1A475127F50d531023803'
+    },
+    {
+        network: 'Linea',
+        poolName: 'Main',
+        gatewayAddress: '0xe840Bb03fE58540841e6eBee94264d5317B88866',
+        rewardVaultAddress: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
+        deriAddress: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A'
+    },
 ]
 
-const SetRewardVaultSpeed2Row = ({network, poolName, poolAddress, rewardVaultAddress, signerAddress}) => {
-    const [state, setState] = useState({curRewardPerSecond: '', newRewardPerSecond: ''})
+const REWARD_VAULT_ABI = [
+    'function rewardPerSeconds(address _gateway) view returns (uint256 rewardPerSecond)',
+    'function setRewardPerSecond(address _gateway, uint256 newRewardPerSecond)',
+    'function totalUnclaimed(address _gateway) view returns (uint256 totalAmount)'
+]
+
+const GATEWAY_ABI = [
+    'function getGatewayState() view returns (int256 cumulativePnlOnGateway, uint256 liquidityTime, uint256 totalLiquidity, int256  cumulativeTimePerLiquidity, uint256 gatewayRequestId)',
+]
+
+const ENGINE_ABI = [
+    "function getEngineState() view returns (address symbolManager, address oracle, address iChainEventSigner, int256  initialMarginMultiplier, int256  protocolFeeCollectRatio, int256 totalLiquidity, int256 lpsPnl, int256 cumulativePnlPerLiquidity, int256 protocolFee)",
+]
+
+const ERC20_ABI = [
+    'function balanceOf(address account) view returns (uint256)',
+    'function transfer(address to, uint256 amount)'
+]
+
+const ENGINEADDRESS = "0x0D769EA82904e5758dCdc03e049179E0926456CD" 
+
+
+const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaultAddress, deriAddress, combine}) => {
+    // console.log(network, 'SetRewardVaultSpeed2Row', poolName, gatewayAddress, rewardVaultAddress, deriAddress)
+    const [state, setState] = useState({curRewardPerSecond: '', newRewardPerSecond: '', totalUnclaimed: '', gatewayLiquidity: '', totalLiquidity: ''})
+    // const { setAmount ,suggestedSendAmount} = useContext(SuggestedSendAmountContext);
+    const [suggestedAmount, setSuggestedAmount] = useState();
 
     const update = useCallback(async () => {
         const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, PROVIDERS[network])
-        const curRewardPerSecond = nn((await vault.vaultInfo(poolAddress)).rewardPerSecond)
-        setState({...state, curRewardPerSecond})
+        const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
+        console.log(network, 'curRewardPerSecond', curRewardPerSecond)
+        const totalUnclaimed = nn(await vault.totalUnclaimed(gatewayAddress))
+        console.log(network, 'totalUnclaimed', totalUnclaimed)
+        
+        const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])
+        const gatewayLiquidity = nn((await gateway.getGatewayState()).totalLiquidity)
+        
+        const deri = new ethers.Contract(deriAddress, ERC20_ABI, PROVIDERS[network])
+        const vaultBalance = nn(await deri.balanceOf(rewardVaultAddress))
+
+        const engine = new ethers.Contract(ENGINEADDRESS, ENGINE_ABI, PROVIDERS['Dchain'])
+        const totalLiquidity = nn((await engine.getEngineState()).totalLiquidity)
+
+        const rewardPerWeek = Math.ceil(gatewayLiquidity * curRewardPerSecond * 86400 * 7 / totalLiquidity)
+        console.log(Number(totalUnclaimed)+ Number(rewardPerWeek), Number(vaultBalance))
+        const _suggestedSendAmount = Math.max(Number(totalUnclaimed) + Number(rewardPerWeek) - Number(vaultBalance), 0)
+        setSuggestedAmount(_suggestedSendAmount)
+        combine({[network]: _suggestedSendAmount })
+        setState({ ...state, curRewardPerSecond, totalUnclaimed, gatewayLiquidity, vaultBalance, totalLiquidity, rewardPerWeek})
+        
     }, [])
 
     useEffect(() => {
@@ -62,26 +91,41 @@ const SetRewardVaultSpeed2Row = ({network, poolName, poolAddress, rewardVaultAdd
 
     const onSet = async () => {
         const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, provider.getSigner())
-        const tx = await executeTx(vault.setRewardPerSecond, [poolAddress, bb(state.newRewardPerSecond)])
+        const tx = await executeTx(vault.setRewardPerSecond, [gatewayAddress, bb(state.newRewardPerSecond)])
         if (tx) await update()
     }
 
+    
+    
     return (
         <tr>
             <td>{network}</td>
             <td><Address address={rewardVaultAddress}/></td>
             <td>{poolName}</td>
-            <td><Address address={poolAddress}/></td>
+            <td><Address address={gatewayAddress}/></td>
+            <td>{state.gatewayLiquidity}</td>
             <td>{state.curRewardPerSecond}</td>
-            <td>{Math.ceil(state.curRewardPerSecond * 86400 * 7 / 1000) * 1000}</td>
-            <td><Address address={signerAddress}/></td>
-            <td><Form.Control value={state.newRewardPerSecond} onChange={(e) => setState({...state, newRewardPerSecond: e.target.value})}/></td>
-            <td><CButton network={network} text='Set' onClick={onSet}/></td>
+            <td>{state.totalUnclaimed}</td>
+            <td>{state.rewardPerWeek}</td>
+            {/* <td>{Math.ceil(state.curRewardPerSecond * 86400 * 7 / 1000) * 1000}</td> */}
+            <td>{state.vaultBalance}</td>
+            <td>{suggestedAmount}</td>
+            {/* <td><Form.Control value={state.newRewardPerSecond} onChange={(e) => setState({...state, newRewardPerSecond: e.target.value})}/></td>
+            <td><CButton network={network} text='Set' onClick={onSet}/></td> */}
         </tr>
     )
 }
 
 export const SetRewardVaultSpeed2 = () => {
+    const {setSuggestedSendAmount} = useContext(SuggestedSendAmountContext)
+    const suggestedSendAmount = useRef({})
+
+
+    const combine = useCallback((value) => {
+        suggestedSendAmount.current = { ...suggestedSendAmount.current, ...value }
+        setSuggestedSendAmount(suggestedSendAmount.current)
+    }, [])
+
     return (
         <div>
             <h5>Set RewardPerSecond V2</h5>
@@ -91,30 +135,30 @@ export const SetRewardVaultSpeed2 = () => {
                     <td>Network</td>
                     <td>RewardVault</td>
                     <td>Pool</td>
-                    <td>PoolAddress</td>
+                    <td>gatewayAddress</td>
+                    <td>gateLiquidity</td>
                     <td>RewardPerSecond</td>
-                    <td>RewardPerWeek</td>
-                    <td>Signer</td>
-                    <td>NewRewardPerSecond</td>
+                    <td>UnclaimedReward</td>
+                    <td>RewardPerWeek(Est.)</td>
+                    <td>RewardVaultBalance</td>
+                    <td>SuggestedSendAmount</td>
                     <td></td>
                 </tr>
-                {POOLS.slice(0, POOLS.length-1).map((row, idx) => (
-                    <SetRewardVaultSpeed2Row key={idx} {...row}/>
+                {POOLS.slice(0, POOLS.length).map((row, idx) => (
+                    <SetRewardVaultSpeed2Row key={idx} {...row} combine={combine}/>
                 ))}
                 <tr>
                     <td>Arbitrum</td>
                     <td><Address address='0x175Fe9E3415D91F00E6882bA052e9c3E2c2A355a'/></td>
                     <td>Uniswap LP Staker</td>
                     <td>---</td>
-                    <td>0.03306</td>
+                    <td>---</td>
+                    <td>---</td>
+                    <td>---</td>
                     <td>20000</td>
                     <td>---</td>
-                    <td>---</td>
-                    <td>---</td>
+                    <td>20000</td>
                 </tr>
-                {POOLS.slice(POOLS.length-1, POOLS.length).map((row, idx) => (
-                    <SetRewardVaultSpeed2Row key={idx} {...row}/>
-                ))}
             </tbody>
             </table>
         </div>
