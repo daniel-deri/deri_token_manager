@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {ethers} from 'ethers'
 import {Form} from 'react-bootstrap'
-import {PROVIDERS, provider,  bb, nn, executeTx} from './Chain'
+import { PROVIDERS, CHAINID_NETWORK, provider,  bb, nn, executeTx} from './Chain'
 import {Address} from './Address'
 import {CButton} from './CButton'
 import { useContext } from 'react';
@@ -12,8 +12,8 @@ const POOLS = [
     {
         network: 'Arbitrum',
         poolName: 'Main',
-        gatewayAddress: '0xCcAcF05a3cb1770f9A5B5A8AA219af1aC0C5E26b',
-        rewardVaultAddress: '0x0a79e067cec0Da906D01463e9cC6D0f96E5Cfc08',
+        gatewayAddress: '0x7C4a640461427C310a710D367C2Ba8C535A7Ef81',
+        rewardVaultAddress: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
         deriAddress: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12'
     },
     {
@@ -53,6 +53,35 @@ const ERC20_ABI = [
 
 const ENGINEADDRESS = "0x0D769EA82904e5758dCdc03e049179E0926456CD" 
 
+async function executeGraphQLQuery(query, variables = {}) {
+    const graphqlEndpoint = 'https://v4dh.deri.io/graphql'; // 替换为你的 GraphQL 端点 URL
+
+    try {
+        const response = await fetch(graphqlEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                variables: variables
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Network response was not ok (${response.status})`);
+        }
+
+        const jsonResponse = await response.json();
+        return jsonResponse; // 包含查询结果的 JSON 对象
+    } catch (error) {
+        console.error('Error during GraphQL query:', error);
+        throw error;
+    }
+}
+
+
 
 const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaultAddress, deriAddress, combine}) => {
     // console.log(network, 'SetRewardVaultSpeed2Row', poolName, gatewayAddress, rewardVaultAddress, deriAddress)
@@ -60,7 +89,23 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
     // const { setAmount ,suggestedSendAmount} = useContext(SuggestedSendAmountContext);
     const [suggestedAmount, setSuggestedAmount] = useState();
 
+    const liquidityQuery = `
+        query MyQuery {
+            iChainLiquidity {
+                chainId
+                liquidity
+            }
+        }
+    `;
+    
+    // const iChainLiquidity = response.data.iChainLiquidity;
+
     const update = useCallback(async () => {
+        const response = await executeGraphQLQuery(liquidityQuery);
+        const iChainLiquidity = response.data.iChainLiquidity;
+
+        // 找到与当前网络匹配的链的流动性
+        const networkLiquidity = iChainLiquidity.find(chain => CHAINID_NETWORK[chain.chainId] === network);
         const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, PROVIDERS[network])
         const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
         console.log(network, 'curRewardPerSecond', curRewardPerSecond)
@@ -68,7 +113,7 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
         console.log(network, 'totalUnclaimed', totalUnclaimed)
         
         const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])
-        const gatewayLiquidity = nn((await gateway.getGatewayState()).totalLiquidity)
+        const gatewayLiquidity = networkLiquidity.liquidity
         
         const deri = new ethers.Contract(deriAddress, ERC20_ABI, PROVIDERS[network])
         const vaultBalance = Math.ceil(nn(await deri.balanceOf(rewardVaultAddress)))
@@ -79,7 +124,7 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
         const rewardPerWeek = Math.ceil(gatewayLiquidity * curRewardPerSecond * 86400 * 7 / totalLiquidity)
         console.log(Number(totalUnclaimed)+ Number(rewardPerWeek), Number(vaultBalance))
         // const _suggestedSendAmount = Math.max(Number(totalUnclaimed) + Number(rewardPerWeek) - Number(vaultBalance), 0)
-        const _suggestedSendAmount = Math.max(Math.ceil(totalUnclaimed - vaultBalance), 0)
+        const _suggestedSendAmount = Math.max(Math.ceil(totalUnclaimed - vaultBalance + rewardPerWeek), 0)
         setSuggestedAmount(_suggestedSendAmount)
         combine({[network]: _suggestedSendAmount })
         setState({ ...state, curRewardPerSecond, totalUnclaimed, gatewayLiquidity, vaultBalance, totalLiquidity, rewardPerWeek})

@@ -496,10 +496,10 @@ const ADDRESSES = {
     deriZksync: '0x140D5bc5b62d6cB492B1A475127F50d531023803',
     deriLinea: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A',
 
-    rewardVaultArbitrum: '0x0a79e067cec0Da906D01463e9cC6D0f96E5Cfc08',
+    rewardVaultArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
     rewardVaultZksync: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
     rewardVaultLinea: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
-    uniswapLpStakerArbitrum: '0x175Fe9E3415D91F00E6882bA052e9c3E2c2A355a',
+    uniswapLpStakerArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
 
     wormholeEthereum: '0x6874640cC849153Cb3402D193C33c416972159Ce',
     wormholeBsc: '0x15a5969060228031266c64274a54e02Fbd924AbF',
@@ -567,7 +567,7 @@ const SetRewardPerWeek = () => {
         <tbody>
             <tr>
                 <td>Pool</td>
-                <td>RewardPerWeek</td>
+                <td>SuggestedSendAmount</td>
                 <td>SetReward</td>
             </tr>
             {vaults.map((vault) => (
@@ -852,17 +852,20 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _refundRecipient: "0x0000000000000000000000000000000000000000"
         }
 
-        console.log('lineaRewardVaultDetails', lineaRewardVaultDetails)
+        
 
         console.log("mint all param signature", signature)
-        console.log("mint all param detail", [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails])
+        
         // const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
-        const msg_value = arbitrumRewardVaultDetails._value.add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
-        console.log("mint all param msg.value", msg_value.toString())
-
-        // const details = [arbitrumRewardVaultDetails, arbitrumUniswapDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
+            
         const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
-        // const details = [lineaRewardVaultDetails]
+            .filter(detail => detail._amount > 0);
+
+        // 计算 msg_value
+        const msg_value = details.reduce((acc, detail) => acc.add(detail._value), BigNumber.from(0));
+
+        console.log("mint all param detail", details, msg_value)
+
         await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
             signature,
             details,
