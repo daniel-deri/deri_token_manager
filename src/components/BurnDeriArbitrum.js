@@ -19,8 +19,8 @@ const BURNER_ABI = [
 const ADDRESSES = {
     usdc: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
     deri: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
-    burner: '0xa544e477866a29685E4155E27f9bD886C63880a0',
-    signer: '0xD7790449c2c649E84d9e2814494d60256F842Deb',
+    burner: '0x3e3278078827eCf71979A40Fe6Ef7992768C9b3a',
+    operator: '0xe73C2b0b5DC3F2A2f647b2820328b2e00FdC0520',
 }
 
 export const BurnDeriArbitrum = () => {
@@ -88,13 +88,13 @@ export const BurnDeriArbitrum = () => {
                 <td>Burner</td>
                 <td>USDC Balance</td>
                 <td>DERI Balance</td>
-                <td>Signer</td>
+                <td>Operator</td>
             </tr>
             <tr>
                 <td><Address address={ADDRESSES.burner}/></td>
                 <td>{state.usdcBalance}</td>
                 <td>{state.deriBalance}</td>
-                <td><Address address={ADDRESSES.signer}/></td>
+                <td><Address address={ADDRESSES.operator}/></td>
             </tr>
             <tr>
                 <td></td>
