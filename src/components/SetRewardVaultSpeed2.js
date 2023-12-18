@@ -30,6 +30,13 @@ const POOLS = [
         rewardVaultAddress: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
         deriAddress: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A'
     },
+    {
+        network: 'Scroll',
+        poolName: 'Main',
+        gatewayAddress: '0x7B56Af65Da221A40B48bEDcCb67410D6C0bE771D',
+        rewardVaultAddress: '0x2C139f40E03b585Be0A9503Ad32e0b80745211b9',
+        deriAddress: '0x175A19A9073beA5dB6A692Ce0Ed4cA1356e84d14'
+    },
 ]
 
 const REWARD_VAULT_ABI = [
@@ -101,33 +108,37 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
     // const iChainLiquidity = response.data.iChainLiquidity;
 
     const update = useCallback(async () => {
-        const response = await executeGraphQLQuery(liquidityQuery);
-        const iChainLiquidity = response.data.iChainLiquidity;
+        try {
+            const response = await executeGraphQLQuery(liquidityQuery);
+            const iChainLiquidity = response.data.iChainLiquidity;
 
-        // 找到与当前网络匹配的链的流动性
-        const networkLiquidity = iChainLiquidity.find(chain => CHAINID_NETWORK[chain.chainId] === network);
-        const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, PROVIDERS[network])
-        const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
-        console.log(network, 'curRewardPerSecond', curRewardPerSecond)
-        const totalUnclaimed = Math.ceil(nn(await vault.totalUnclaimed(gatewayAddress)))
-        console.log(network, 'totalUnclaimed', totalUnclaimed)
-        
-        const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])
-        const gatewayLiquidity = networkLiquidity.liquidity
-        
-        const deri = new ethers.Contract(deriAddress, ERC20_ABI, PROVIDERS[network])
-        const vaultBalance = Math.ceil(nn(await deri.balanceOf(rewardVaultAddress)))
+            // 找到与当前网络匹配的链的流动性
+            const networkLiquidity = iChainLiquidity.find(chain => CHAINID_NETWORK[chain.chainId] === network);
+            const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, PROVIDERS[network])
+            const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
+            console.log(network, 'curRewardPerSecond', curRewardPerSecond)
+            const totalUnclaimed = Math.ceil(nn(await vault.totalUnclaimed(gatewayAddress)))
+            console.log(network, 'totalUnclaimed', totalUnclaimed)
+            
+            const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])
+            const gatewayLiquidity = networkLiquidity.liquidity
+            
+            const deri = new ethers.Contract(deriAddress, ERC20_ABI, PROVIDERS[network])
+            const vaultBalance = Math.ceil(nn(await deri.balanceOf(rewardVaultAddress)))
 
-        const engine = new ethers.Contract(ENGINEADDRESS, ENGINE_ABI, PROVIDERS['Dchain'])
-        const totalLiquidity = nn((await engine.getEngineState()).totalLiquidity)
+            const engine = new ethers.Contract(ENGINEADDRESS, ENGINE_ABI, PROVIDERS['Dchain'])
+            const totalLiquidity = nn((await engine.getEngineState()).totalLiquidity)
 
-        const rewardPerWeek = Math.ceil(gatewayLiquidity * curRewardPerSecond * 86400 * 7 / totalLiquidity)
-        console.log(Number(totalUnclaimed)+ Number(rewardPerWeek), Number(vaultBalance))
-        // const _suggestedSendAmount = Math.max(Number(totalUnclaimed) + Number(rewardPerWeek) - Number(vaultBalance), 0)
-        const _suggestedSendAmount = Math.max(Math.ceil(totalUnclaimed - vaultBalance + rewardPerWeek), 0)
-        setSuggestedAmount(_suggestedSendAmount)
-        combine({[network]: _suggestedSendAmount })
-        setState({ ...state, curRewardPerSecond, totalUnclaimed, gatewayLiquidity, vaultBalance, totalLiquidity, rewardPerWeek})
+            const rewardPerWeek = Math.ceil(gatewayLiquidity * curRewardPerSecond * 86400 * 7 / totalLiquidity)
+            console.log(Number(totalUnclaimed)+ Number(rewardPerWeek), Number(vaultBalance))
+            // const _suggestedSendAmount = Math.max(Number(totalUnclaimed) + Number(rewardPerWeek) - Number(vaultBalance), 0)
+            const _suggestedSendAmount = Math.max(Math.ceil(totalUnclaimed - vaultBalance + rewardPerWeek), 0)
+            setSuggestedAmount(_suggestedSendAmount)
+            combine({[network]: _suggestedSendAmount })
+            setState({ ...state, curRewardPerSecond, totalUnclaimed, gatewayLiquidity, vaultBalance, totalLiquidity, rewardPerWeek})
+        } catch (error) {
+            console.error("An error occurred: ", error);
+        }
         
     }, [])
 

@@ -480,7 +480,7 @@ const DATABASE_ABI = [
     'function signature(address account) view returns (tuple(uint256 amount, uint256 fromChainId, address fromWormhole, uint256 toChainId, address toWormhole, uint256 nonce, uint256 timestamp, uint8 v, bytes32 r, bytes32 s, bool valid))'
 ]
 
-const MINTER_ADDRESS = '0x919735d147185788D8A29942baC49A5164A1Bfd6'
+const MINTER_ADDRESS = '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B'
 const DERI_ADDRESS = '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9'
 const DERI_ABI = [
     'function nonces(address account) view returns (uint256)',
@@ -489,7 +489,7 @@ const DERI_ABI = [
 ]
 
 const ADDRESSES = {
-    sender: '0x919735d147185788D8A29942baC49A5164A1Bfd6',
+    sender: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B',
     deriEthereum: '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9',
     deriBsc: '0xe60eaf5A997DFAe83739e035b005A33AfdCc6df5',
     deriArbitrum: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
@@ -499,6 +499,7 @@ const ADDRESSES = {
     rewardVaultArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
     rewardVaultZksync: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
     rewardVaultLinea: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
+    rewardVaultScroll: '0x2C139f40E03b585Be0A9503Ad32e0b80745211b9',
     uniswapLpStakerArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
 
     wormholeEthereum: '0x6874640cC849153Cb3402D193C33c416972159Ce',
@@ -510,8 +511,9 @@ const ADDRESSES = {
     arbitrumGateway: '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
     zksyncL1Bridge: '0x57891966931Eb4Bb6FB81430E6cE0A03AAbDe063',
     zksyncDiamondProxy: "0x32400084c286cf3e17e7b677ea9583e60a000324",
-    // TODO
+
     lineaBridge: "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
+    scrollGateway: "0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6"
 }
 
 const ApproveBridges = () => {
@@ -538,6 +540,10 @@ const ApproveBridges = () => {
         await executeTx(deriTokenManagerContract.approve, [ADDRESSES.lineaBridge])
     }
 
+    const onApproveScroll = async () => {
+        await executeTx(deriTokenManagerContract.approve, [ADDRESSES.scrollGateway])
+    }
+
 
     return (
         <tbody>
@@ -548,6 +554,7 @@ const ApproveBridges = () => {
                 <td><CButton network='Ethereum' text='Approve Arbitrum Bridge' onClick={onApproveArbitrumBridge} /></td>
                 <td><CButton network='Ethereum' text='Approve zkSync Bridge' onClick={onApproveZksyncBridge} /></td>
                 <td><CButton network='Ethereum' text='Approve Linea Bridge' onClick={onApproveLinea} /></td>
+                <td><CButton network='Ethereum' text='Approve Scroll Bridge' onClick={onApproveScroll} /></td>
             </tr>
         </tbody>
     )
@@ -560,7 +567,8 @@ const SetRewardPerWeek = () => {
     const vaults = [
         { id: 0, network: 'Arbitrum', name: 'arbitrumRewardVault', title: 'RewardVault (Arbitrum)' },
         { id: 1, network: 'Zksync', name: 'zksyncRewardVault', title: 'RewardVault (Zksync)' },
-        { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' }
+        { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' },
+        { id: 3, network: 'Scroll', name: 'scrollRewardVault', title: 'RewardVault (Scroll)' }
     ];
 
     return (
@@ -852,13 +860,29 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _refundRecipient: "0x0000000000000000000000000000000000000000"
         }
 
+        const scrollRewardVaultDetails = {
+            poolChain: 3,
+            _amount: bb(suggestedSendAmount.Scroll),
+            _token: ADDRESSES.deriEthereum,
+            _to: ADDRESSES.rewardVaultScroll,
+            _maxGas: 1000000,
+            _gasPriceBid: 0,
+            _value: bb(0.001),
+            _data: "0x",
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000"
+        }
+
         
 
         console.log("mint all param signature", signature)
         
         // const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
             
-        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails]
+        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails]
             .filter(detail => detail._amount > 0);
 
         // 计算 msg_value

@@ -14,7 +14,9 @@ export const CHAINID_NETWORK = {
     97: 'BscTestnet',
     421613: 'ArbitrumTestnet',
     59144: 'Linea',
-    20231119:'Dchain'
+    20231119:'Dchain',
+    534352: 'Scroll',
+
 }
 
 export const PROVIDERS = {
@@ -27,7 +29,8 @@ export const PROVIDERS = {
     BscTestnet: new ethers.providers.JsonRpcProvider('https://data-seed-prebsc-1-s2.binance.org:8545'),
     ArbitrumTestnet: new ethers.providers.JsonRpcProvider('https://goerli-rollup.arbitrum.io/rpc'),
     Linea: new ethers.providers.JsonRpcBatchProvider('https://linea-mainnet.infura.io/v3/7969d99b41d84a06a6809668daaa4a46'),
-    Dchain: new ethers.providers.JsonRpcBatchProvider('https://rpc-dchain.deri.io')
+    Dchain: new ethers.providers.JsonRpcBatchProvider('https://rpc-dchain.deri.io'),
+    Scroll: new ethers.providers.JsonRpcBatchProvider('https://rpc.ankr.com/scroll')
     // Localhost: new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545'),
 }
 
