@@ -637,7 +637,8 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         const signer = provider.getSigner()
         const deri = new ethers.Contract(DERI_ADDRESS, DERI_ABI, signer)
         const nonce = await deri.nonces(ADDRESSES.deriTokenManager)
-        const deadline = parseInt(Date.now() / 86400000 ) * 86400 + 300
+        // const deadline = parseInt(Date.now() / 86400000 ) * 86400 + 300
+        const deadline = Math.floor(Date.now() / 1000) + 300;
         const domain = {
             name: 'Deri',
             chainId: 1,
@@ -890,15 +891,15 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
         console.log("mint all param detail", details, msg_value)
 
-        await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
-            signature,
-            details,
-            { value: msg_value }
-        ])
-        // tx = await executeTx(deriTokenManagerContract.bridgeAll, [
+        // await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
+        //     signature,
         //     details,
         //     { value: msg_value }
         // ])
+        tx = await executeTx(deriTokenManagerContract.bridgeAll, [
+            details,
+            { value: msg_value }
+        ])
 
         // } catch (error) {
         //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
