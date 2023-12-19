@@ -891,15 +891,15 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
 
         console.log("mint all param detail", details, msg_value)
 
-        // await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
-        //     signature,
-        //     details,
-        //     { value: msg_value }
-        // ])
-        tx = await executeTx(deriTokenManagerContract.bridgeAll, [
+        await executeTx(deriTokenManagerContract.mintAndBridgeAll, [
+            signature,
             details,
             { value: msg_value }
         ])
+        // tx = await executeTx(deriTokenManagerContract.bridgeAll, [
+        //     details,
+        //     { value: msg_value }
+        // ])
 
         // } catch (error) {
         //     const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
