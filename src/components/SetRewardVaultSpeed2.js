@@ -118,6 +118,7 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
             const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
             console.log(network, 'curRewardPerSecond', curRewardPerSecond)
             const totalUnclaimed = Math.ceil(nn(await vault.totalUnclaimed(gatewayAddress)))
+            // const totalUnclaimed = 0
             console.log(network, 'totalUnclaimed', totalUnclaimed)
             
             const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])

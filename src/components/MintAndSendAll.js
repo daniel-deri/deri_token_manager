@@ -637,7 +637,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         const signer = provider.getSigner()
         const deri = new ethers.Contract(DERI_ADDRESS, DERI_ABI, signer)
         const nonce = await deri.nonces(ADDRESSES.deriTokenManager)
-        const deadline = parseInt(Date.now() / 86400000 + 1) * 86400
+        const deadline = parseInt(Date.now() / 86400000 + 1) * 60*3
         const domain = {
             name: 'Deri',
             chainId: 1,
@@ -897,7 +897,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         ])
         // tx = await executeTx(deriTokenManagerContract.bridgeAll, [
         //     details,
-        //     { value: lineaRewardVaultDetails._value}
+        //     { value: msg_value }
         // ])
 
         // } catch (error) {
