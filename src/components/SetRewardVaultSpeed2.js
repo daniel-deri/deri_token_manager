@@ -14,36 +14,39 @@ const POOLS = [
         poolName: 'Main',
         gatewayAddress: '0x7C4a640461427C310a710D367C2Ba8C535A7Ef81',
         rewardVaultAddress: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
-        deriAddress: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12'
+        deriAddress: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
+        multicallAddress: '0x',
+        ltokenAddress: '0x',
     },
     {
         network: 'Zksync',
         poolName: 'Main',
         gatewayAddress: '0x34FD72D2053339EA4EB1a8836CF50Ebce91962D0',
         rewardVaultAddress: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
-        deriAddress: '0x140D5bc5b62d6cB492B1A475127F50d531023803'
+        deriAddress: '0x140D5bc5b62d6cB492B1A475127F50d531023803',
+        multicallAddress: '0x',
+        ltokenAddress: '0x',
     },
     {
         network: 'Linea',
         poolName: 'Main',
         gatewayAddress: '0xe840Bb03fE58540841e6eBee94264d5317B88866',
         rewardVaultAddress: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
-        deriAddress: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A'
+        deriAddress: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A',
+        multicallAddress: '0xcA11bde05977b3631167028862bE2a173976CA11',
+        ltokenAddress: '0xC79102C36BBbA246B8Bb6aE81B50ba8544e45174',
     },
     {
         network: 'Scroll',
         poolName: 'Main',
         gatewayAddress: '0x7B56Af65Da221A40B48bEDcCb67410D6C0bE771D',
         rewardVaultAddress: '0x2C139f40E03b585Be0A9503Ad32e0b80745211b9',
-        deriAddress: '0x175A19A9073beA5dB6A692Ce0Ed4cA1356e84d14'
+        deriAddress: '0xa3c5293892f112C834ADa46219973C5e4Ac23bA0',
+        multicallAddress: '0x',
+        ltokenAddress: '0x',
     },
 ]
 
-const REWARD_VAULT_ABI = [
-    'function rewardPerSeconds(address _gateway) view returns (uint256 rewardPerSecond)',
-    'function setRewardPerSecond(address _gateway, uint256 newRewardPerSecond)',
-    'function totalUnclaimed(address _gateway) view returns (uint256 totalAmount)'
-]
 
 const GATEWAY_ABI = [
     'function getGatewayState() view returns (int256 cumulativePnlOnGateway, uint256 liquidityTime, uint256 totalLiquidity, int256  cumulativeTimePerLiquidity, uint256 gatewayRequestId)',
@@ -58,7 +61,125 @@ const ERC20_ABI = [
     'function transfer(address to, uint256 amount)'
 ]
 
+
+const MULTICALL_ABI = [
+    'function aggregate(tuple(address target, bytes callData)[] calls) payable returns (uint256 blockNumber, bytes[] returnData)',
+    'function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)',
+    'function aggregate3Value(tuple(address target, bool allowFailure, uint256 value, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)',
+    'function blockAndAggregate(tuple(address target, bytes callData)[] calls) payable returns (uint256 blockNumber, bytes32 blockHash, tuple(bool success, bytes returnData)[] returnData)',
+    'function getBasefee() view returns (uint256 basefee)',
+    'function getBlockHash(uint256 blockNumber) view returns (bytes32 blockHash)',
+    'function getBlockNumber() view returns (uint256 blockNumber)',
+    'function getChainId() view returns (uint256 chainid)',
+    'function getCurrentBlockCoinbase() view returns (address coinbase)',
+    'function getCurrentBlockDifficulty() view returns (uint256 difficulty)',
+    'function getCurrentBlockGasLimit() view returns (uint256 gaslimit)',
+    'function getCurrentBlockTimestamp() view returns (uint256 timestamp)',
+    'function getEthBalance(address addr) view returns (uint256 balance)',
+    'function getLastBlockHash() view returns (bytes32 blockHash)',
+    'function tryAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)',
+    'function tryBlockAndAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) payable returns (uint256 blockNumber, bytes32 blockHash, tuple(bool success, bytes returnData)[] returnData)',
+];
+
+const REWARD_VAULT_ABI = [
+    'function rewardPerSeconds(address _gateway) view returns (uint256 rewardPerSecond)',
+    'function setRewardPerSecond(address _gateway, uint256 newRewardPerSecond)',
+    'function totalUnclaimed(address _gateway) view returns (uint256 totalAmount)',
+    'function getUserInfo(address _gateway,uint256 lTokenId) external view returns(tuple(uint256, uint256)[])',
+    'function pending(address _gateway, uint256 lTokenId) view returns (uint256 rewardAmount)',
+]
+
+const PTOKEN_ABI = [
+    'function totalMinted() view returns (uint160)',
+    'function BASE_TOKENID() view returns (uint256)'
+
+]
+
 const ENGINEADDRESS = "0x0D769EA82904e5758dCdc03e049179E0926456CD" 
+
+function chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
+}
+async function pendingAmount(network, ptoken_address, multicall_address, reward_address, gateway_address) {
+    const ptoken = new ethers.Contract(ptoken_address, PTOKEN_ABI, PROVIDERS[network]);
+    const totalMinted = await ptoken.totalMinted();
+    const baseTokenId = await ptoken.BASE_TOKENID();
+    const tokenIdArray = [];
+    for (let i = 0; i < totalMinted; i++) {
+        tokenIdArray.push(baseTokenId.add(i));
+    }
+    const tokenIdChunks = chunkArray(tokenIdArray, 200);
+    const multicall = new ethers.Contract(multicall_address, MULTICALL_ABI, PROVIDERS[network]);
+    const rewardInterface = new ethers.utils.Interface(REWARD_VAULT_ABI);
+
+    // Process each chunk in parallel
+    const chunkPromises = tokenIdChunks.map(async (chunk) => {
+        const pendingCalls = chunk.map((user) => ({
+            target: reward_address,
+            allowFailure: true,
+            callData: rewardInterface.encodeFunctionData('pending', [gateway_address, user]),
+        }));
+
+        const pendingResult = await multicall.callStatic.aggregate3(pendingCalls);
+        return pendingResult.map(({ success, returnData }, i) => {
+            if (!success) throw new Error(`Failed to get resolver for ${chunk[i]}`);
+            return rewardInterface.decodeFunctionResult('pending', returnData)[0];
+        });
+    });
+
+    // Wait for all chunk promises to resolve
+    const allChunkResults = await Promise.all(chunkPromises);
+
+    // Sum the pending amounts from all chunks
+    let totalPendingAmount = ethers.BigNumber.from(0);
+    allChunkResults.forEach(chunkPendingAmount => {
+        const sumOfChunk = chunkPendingAmount.reduce((acc, amount) => acc.add(amount), ethers.BigNumber.from(0));
+        totalPendingAmount = totalPendingAmount.add(sumOfChunk);
+    });
+
+    console.log("totalPendingAmount", nn(totalPendingAmount));
+    return totalPendingAmount;
+}
+
+
+// async function pendingAmount(network, ptoken_address, multicall_address, reward_address, gateway_address) {
+
+//     const ptoken = new ethers.Contract(ptoken_address, PTOKEN_ABI, PROVIDERS[network]);
+//     const totalMinted = await ptoken.totalMinted();
+//     const baseTokenId = await ptoken.BASE_TOKENID();
+//     const tokenIdArray = [];
+//     for (let i = 0; i < totalMinted; i++) {
+//         tokenIdArray.push(baseTokenId.add(i));
+//     }
+//     const tokenIdChunks = chunkArray(tokenIdArray, 200);
+//     const multicall = new ethers.Contract(multicall_address, MULTICALL_ABI, PROVIDERS[network]);
+//     const rewardInterface = new ethers.utils.Interface(REWARD_VAULT_ABI);
+//     let totalPendingAmount = ethers.BigNumber.from(0);
+//     for (const chunk of tokenIdChunks) {
+//         const pendingCalls = chunk.map((user) => ({
+//             target: reward_address,
+//             allowFailure: true,
+//             callData: rewardInterface.encodeFunctionData('pending', [gateway_address, user]),
+//         }));
+
+//         const pendingResult = await multicall.callStatic.aggregate3(pendingCalls);
+//         const chunkPendingAmount = pendingResult.map(({ success, returnData }, i) => {
+//             if (!success) throw new Error(`Failed to get resolver for ${chunk[i]}`);
+//             return rewardInterface.decodeFunctionResult('pending', returnData)[0];
+//         });
+
+//         // Sum the pending amounts of the current chunk
+//         const sumOfChunk = chunkPendingAmount.reduce((acc, amount) => acc.add(amount), ethers.BigNumber.from(0));
+//         totalPendingAmount = totalPendingAmount.add(sumOfChunk);
+//     }
+
+//     console.log("totalPendingAmount", nn(totalPendingAmount))
+//     return totalPendingAmount
+// }
 
 async function executeGraphQLQuery(query, variables = {}) {
     const graphqlEndpoint = 'https://v4dh.deri.io/graphql'; // 替换为你的 GraphQL 端点 URL
@@ -90,7 +211,7 @@ async function executeGraphQLQuery(query, variables = {}) {
 
 
 
-const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaultAddress, deriAddress, combine}) => {
+const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaultAddress, deriAddress, multicallAddress, ltokenAddress, combine}) => {
     // console.log(network, 'SetRewardVaultSpeed2Row', poolName, gatewayAddress, rewardVaultAddress, deriAddress)
     const [state, setState] = useState({curRewardPerSecond: '', newRewardPerSecond: '', totalUnclaimed: '', gatewayLiquidity: '', totalLiquidity: ''})
     // const { setAmount ,suggestedSendAmount} = useContext(SuggestedSendAmountContext);
@@ -117,10 +238,14 @@ const SetRewardVaultSpeed2Row = ({ network, poolName, gatewayAddress, rewardVaul
             const vault = new ethers.Contract(rewardVaultAddress, REWARD_VAULT_ABI, PROVIDERS[network])
             const curRewardPerSecond = nn(await vault.rewardPerSeconds(gatewayAddress))
             console.log(network, 'curRewardPerSecond', curRewardPerSecond)
-            const totalUnclaimed = Math.ceil(nn(await vault.totalUnclaimed(gatewayAddress)))
-            // const totalUnclaimed = 0
-            console.log(network, 'totalUnclaimed', totalUnclaimed)
-            
+            let totalUnclaimed;
+            if (network == 'Linea') {
+                totalUnclaimed = Math.ceil(nn(await pendingAmount(network, ltokenAddress, multicallAddress, rewardVaultAddress, gatewayAddress)));
+            } else {
+                totalUnclaimed = Math.ceil(nn(await vault.totalUnclaimed(gatewayAddress)));
+            }
+            console.log(network, 'totalUnclaimed', totalUnclaimed);
+
             const gateway = new ethers.Contract(gatewayAddress, GATEWAY_ABI, PROVIDERS[network])
             const gatewayLiquidity = networkLiquidity.liquidity
             
