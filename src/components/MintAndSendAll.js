@@ -480,7 +480,7 @@ const DATABASE_ABI = [
     'function signature(address account) view returns (tuple(uint256 amount, uint256 fromChainId, address fromWormhole, uint256 toChainId, address toWormhole, uint256 nonce, uint256 timestamp, uint8 v, bytes32 r, bytes32 s, bool valid))'
 ]
 
-const MINTER_ADDRESS = '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B'
+const MINTER_ADDRESS = '0x032a667e4e4822DcF8fF3739D00740347A331453'
 const DERI_ADDRESS = '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9'
 const DERI_ABI = [
     'function nonces(address account) view returns (uint256)',
@@ -489,7 +489,7 @@ const DERI_ABI = [
 ]
 
 const ADDRESSES = {
-    sender: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B',
+    sender: '0x032a667e4e4822DcF8fF3739D00740347A331453',
     deriEthereum: '0xA487bF43cF3b10dffc97A9A744cbB7036965d3b9',
     deriBsc: '0xe60eaf5A997DFAe83739e035b005A33AfdCc6df5',
     deriArbitrum: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
