@@ -16,7 +16,7 @@ export const CHAINID_NETWORK = {
     59144: 'Linea',
     20231119:'Dchain',
     534352: 'Scroll',
-
+    1101: 'PolygonzkEVM'
 }
 
 export const PROVIDERS = {
@@ -30,7 +30,8 @@ export const PROVIDERS = {
     ArbitrumTestnet: new ethers.providers.JsonRpcProvider('https://goerli-rollup.arbitrum.io/rpc'),
     Linea: new ethers.providers.JsonRpcBatchProvider('https://linea-mainnet.infura.io/v3/7969d99b41d84a06a6809668daaa4a46'),
     Dchain: new ethers.providers.JsonRpcBatchProvider('https://rpc-dchain.deri.io'),
-    Scroll: new ethers.providers.JsonRpcBatchProvider('https://rpc.ankr.com/scroll')
+    Scroll: new ethers.providers.JsonRpcBatchProvider('https://rpc.ankr.com/scroll'),
+    PolygonzkEVM: new ethers.providers.JsonRpcBatchProvider('https://zkevm-rpc.com')
     // Localhost: new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545'),
 }
 

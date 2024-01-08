@@ -495,11 +495,13 @@ const ADDRESSES = {
     deriArbitrum: '0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12',
     deriZksync: '0x140D5bc5b62d6cB492B1A475127F50d531023803',
     deriLinea: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A',
+    deriPolygonzkEVM: "0x360CE6EeCDF98e3851531051907e6a809BF6e236",
 
     rewardVaultArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
     rewardVaultZksync: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
     rewardVaultLinea: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
     rewardVaultScroll: '0x2C139f40E03b585Be0A9503Ad32e0b80745211b9',
+    rewardVaultPolygonzkEVM: "0x7B8bCf00DEf58b50620b2C253f3A97EE51F44683",
     uniswapLpStakerArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
 
     wormholeEthereum: '0x6874640cC849153Cb3402D193C33c416972159Ce',
@@ -513,7 +515,8 @@ const ADDRESSES = {
     zksyncDiamondProxy: "0x32400084c286cf3e17e7b677ea9583e60a000324",
 
     lineaBridge: "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
-    scrollGateway: "0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6"
+    scrollGateway: "0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6",
+    polygonzkEVMBridge: "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"
 }
 
 const ApproveBridges = () => {
@@ -544,6 +547,10 @@ const ApproveBridges = () => {
         await executeTx(deriTokenManagerContract.approve, [ADDRESSES.scrollGateway])
     }
 
+    const onApprovePolygonzkEVM = async () => {
+        await executeTx(deriTokenManagerContract.approve, [ADDRESSES.polygonzkEVMBridge])
+    }
+
 
     return (
         <tbody>
@@ -555,6 +562,7 @@ const ApproveBridges = () => {
                 <td><CButton network='Ethereum' text='Approve zkSync Bridge' onClick={onApproveZksyncBridge} /></td>
                 <td><CButton network='Ethereum' text='Approve Linea Bridge' onClick={onApproveLinea} /></td>
                 <td><CButton network='Ethereum' text='Approve Scroll Bridge' onClick={onApproveScroll} /></td>
+                <td><CButton network='Ethereum' text='Approve Polygon zkEVM Bridge' onClick={onApprovePolygonzkEVM} /></td>
             </tr>
         </tbody>
     )
@@ -568,7 +576,8 @@ const SetRewardPerWeek = () => {
         { id: 0, network: 'Arbitrum', name: 'arbitrumRewardVault', title: 'RewardVault (Arbitrum)' },
         { id: 1, network: 'Zksync', name: 'zksyncRewardVault', title: 'RewardVault (Zksync)' },
         { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' },
-        { id: 3, network: 'Scroll', name: 'scrollRewardVault', title: 'RewardVault (Scroll)' }
+        { id: 3, network: 'Scroll', name: 'scrollRewardVault', title: 'RewardVault (Scroll)' },
+        { id: 3, network: 'PolygonzkEVM', name: 'polygonzkevmRewardVault', title: 'RewardVault (PolygozkEVM)' }
     ];
 
     return (
@@ -877,13 +886,29 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _refundRecipient: "0x0000000000000000000000000000000000000000"
         }
 
+        const polygonzkevmRewardVaultDetails = {
+            poolChain: 4,
+            _amount: bb(suggestedSendAmount.PolygonzkEVM),
+            _token: ADDRESSES.deriEthereum,
+            _to: ADDRESSES.rewardVaultPolygonzkEVM,
+            _maxGas: 0,
+            _gasPriceBid: 0,
+            _value: 0,
+            _data: "0x",
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000"
+        }
+
         
 
         console.log("mint all param signature", signature)
         
         // const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
             
-        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails]
+        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails, polygonzkevmRewardVaultDetails]
             .filter(detail => detail._amount > 0);
 
         // 计算 msg_value

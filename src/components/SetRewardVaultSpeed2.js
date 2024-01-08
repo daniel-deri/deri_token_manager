@@ -45,6 +45,15 @@ const POOLS = [
         multicallAddress: '0x',
         ltokenAddress: '0x',
     },
+    {
+        network: 'PolygonzkEVM',
+        poolName: 'Main',
+        gatewayAddress: '0xC7E484c20D5dc5d33299AfB430BFb5d17085eE98',
+        rewardVaultAddress: '0x7B8bCf00DEf58b50620b2C253f3A97EE51F44683',
+        deriAddress: '0x360CE6EeCDF98e3851531051907e6a809BF6e236',
+        multicallAddress: '0x',
+        ltokenAddress: '0x',
+    },
 ]
 
 
