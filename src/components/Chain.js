@@ -16,7 +16,8 @@ export const CHAINID_NETWORK = {
     59144: 'Linea',
     20231119:'Dchain',
     534352: 'Scroll',
-    1101: 'PolygonzkEVM'
+    1101: 'PolygonzkEVM',
+    169: 'Manta',
 }
 
 export const PROVIDERS = {
@@ -31,7 +32,8 @@ export const PROVIDERS = {
     Linea: new ethers.providers.JsonRpcBatchProvider('https://linea-mainnet.infura.io/v3/7969d99b41d84a06a6809668daaa4a46'),
     Dchain: new ethers.providers.JsonRpcBatchProvider('https://rpc-dchain.deri.io'),
     Scroll: new ethers.providers.JsonRpcBatchProvider('https://rpc.ankr.com/scroll'),
-    PolygonzkEVM: new ethers.providers.JsonRpcBatchProvider('https://zkevm-rpc.com')
+    PolygonzkEVM: new ethers.providers.JsonRpcBatchProvider('https://zkevm-rpc.com'),
+    Manta: new ethers.providers.JsonRpcBatchProvider('https://pacific-rpc.manta.network/http')
     // Localhost: new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545'),
 }
 

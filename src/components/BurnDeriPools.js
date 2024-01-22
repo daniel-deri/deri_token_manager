@@ -3,6 +3,7 @@ import {ethers} from 'ethers'
 import {ZERO_ADDRESS, PROVIDERS, provider, nn, executeTx} from './Chain'
 import {Address} from './Address'
 import {CButton} from './CButton'
+import { Button } from 'react-bootstrap'
 
 const ABI_POOL_V3 = [
     'function protocolFeeCollector() view returns (address)',
@@ -14,6 +15,7 @@ const ABI_POOL = [
 
 const POOLS = [
     {
+        status: "OK",
         version: 'V3 Main',
         network: 'Bsc',
         bTokenSymbol: 'BUSD',
@@ -21,6 +23,7 @@ const POOLS = [
         aPool: '0x243681B8Cd79E3823fF574e07B2378B8Ab292c1E',
     },
     {
+        status: "OK",
         version: 'V3 Inno',
         network: 'Bsc',
         bTokenSymbol: 'BUSD',
@@ -28,6 +31,7 @@ const POOLS = [
         aPool: '0xD2D950e338478eF7FeB092F840920B3482FcaC40',
     },
     {
+        status: "Archive",
         version: 'V3 Lite',
         network: 'Bsc',
         bTokenSymbol: 'DERI',
@@ -35,6 +39,7 @@ const POOLS = [
         aPool: '0x1eF92eDA3CFeefb8Dae0DB4507f860d3b73f29BA',
     },
     {
+        status: "OK",
         version: 'V3 Main',
         network: 'Arbitrum',
         bTokenSymbol: 'USDC',
@@ -42,22 +47,16 @@ const POOLS = [
         aPool: '0xDE3447Eb47EcDf9B5F90E7A6960a14663916CeE8',
     },
     {
+        status: "OK",
         version: 'V3 Lite',
         network: 'Zksync',
         bTokenSymbol: 'USDC',
         aSigner: '',
         aPool: '0x9F63A5f24625d8be7a34e15477a7d6d66e99582e',
-    },
-    {
-        version: 'V3 Duet',
-        network: 'Arbitrum',
-        bTokenSymbol: 'USDC',
-        aSigner: '0x0000000000000000000000000000000000000000',
-        aPool: '0xdE57c591de8B3675C43fB955725b62e742b1c0B4',
     }
 ]
 
-const BurnDeriPoolsRow = ({version, network, bTokenSymbol, aSigner, aPool}) => {
+const BurnDeriPoolsRow = ({status, version, network, bTokenSymbol, aSigner, aPool}) => {
     const [state, setState] = useState({})
 
     const getCollectInfo = async () => {
@@ -83,9 +82,12 @@ const BurnDeriPoolsRow = ({version, network, bTokenSymbol, aSigner, aPool}) => {
         const tx = await executeTx(pool.collectProtocolFee)
         if (tx) await update()
     }
+    const statusStyle = status === 'OK' ? { color: 'green' } : { color: 'red' };
+    const isButtonDisabled = status === 'Archive';
 
     return (
         <tr>
+            <td style={statusStyle}>{status}</td>
             <td>{version}</td>
             <td>{network}</td>
             <td><Address address={aPool}/></td>
@@ -93,7 +95,16 @@ const BurnDeriPoolsRow = ({version, network, bTokenSymbol, aSigner, aPool}) => {
             <td>{state.protocolFeeAccrued}</td>
             <td><Address address={state.collector}/></td>
             <td><Address address={aSigner}/></td>
-            <td><CButton network={network} text='Collect' onClick={onCollect}/></td>
+
+            {status === 'Archive' ? (
+                <td>
+                    <Button onClick={onCollect} disabled={true}>Collect</Button>
+                </td>
+            ) : (
+                <td>
+                    <CButton network={network} text='Collect' onClick={onCollect} />
+                </td>
+            )}
         </tr>
     )
 }
@@ -103,6 +114,7 @@ export const BurnDeriPools = ({}) => {
         <table>
         <tbody>
             <tr>
+                <td>Status</td>
                 <td>Version</td>
                 <td>Network</td>
                 <td>Pool</td>

@@ -7,8 +7,9 @@ export const BurnDeri = () => {
         <div>
             <h5>Burn Deri</h5>
             <BurnDeriPools/>
+            <h5>Collectors </h5>
             <BurnDeriCollectors/>
-            <BurnDeriBurners/>
+            {/* <BurnDeriBurners/> */}
         </div>
     )
 }

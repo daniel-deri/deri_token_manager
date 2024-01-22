@@ -5,6 +5,7 @@ import { MintAndSendAll } from './components/MintAndSendAll'
 import { SetRewardVaultSpeed2 } from './components/SetRewardVaultSpeed2'
 import { BurnDeri } from './components/BurnDeri'
 import { BurnDeriArbitrum } from './components/BurnDeriArbitrum'
+import { ArbitrumProtocolFeeManager, OtherProtocolFeeManager } from './components/ProtocolFeeManager'
 import { SuggestedSendAmountProvider } from './components/Context'
 import React, { createContext, useState, useContext } from 'react';
 
@@ -17,7 +18,9 @@ function App() {
                 <MintAndSendAll />
                 <SetRewardVaultSpeed2 />
                 <BurnDeri />
-                <BurnDeriArbitrum />
+                <ArbitrumProtocolFeeManager />
+                <OtherProtocolFeeManager />
+                {/* <BurnDeriArbitrum /> */}
             </div>
         </SuggestedSendAmountProvider>
     )
