@@ -41,6 +41,7 @@ const ARBITRUM_COLLECTORS = [
         bTokenSymbol: 'USDC',
         aCollector: '0x9518dC115Bf7AbD278434bf1b55B6EB9C2ba7D61',
         aBToken: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        usdce: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
         operator: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B'
     }]
 
@@ -87,7 +88,7 @@ const COLLECTORS = [
     }
 ]
 
-const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollector, aBToken, operator}) => {
+const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollector, aBToken, usdce, operator}) => {
     const [state, setState] = useState({bTokenAmount: '', minDeriAmount: ''})
 
     const update = useCallback(async () => {
@@ -95,7 +96,10 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
         const collector = new ethers.Contract(aCollector, ABI_ARBITRUM_PROTOCOL_FEE_MANAGER, PROVIDERS[network])
         const balance = nn(await bToken.balanceOf(aCollector), 6)
         const admin = await collector.admin()
-        setState({...state, balance, admin})
+
+        const usdceToken = new ethers.Contract(usdce, ABI_ERC20, PROVIDERS[network])
+        const usdce_balance = nn(await usdceToken.balanceOf(aCollector), 6)
+        setState({ ...state, balance, usdce_balance, admin})
     }, [])
 
     useEffect(() => {
@@ -120,6 +124,7 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
             <td>{network}</td>
             <td><Address address={aCollector}/></td>
             <td>{state.balance}</td>
+            <td>{state.usdce_balance}</td>
             <td><Address address={operator} /></td>
             <td>
                 <div className="input-group">
@@ -154,6 +159,7 @@ export const ArbitrumProtocolFeeManager = () => {
                 <td>Network</td>
                 <td>Manager</td>
                 <td>USDC Balance</td>
+                <td>USDC.E Balance</td>
                 <td>Operator</td>
                 <td>Amount</td>
                 <td>minDeriAmount</td>
