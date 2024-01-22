@@ -41,9 +41,21 @@ const ARBITRUM_COLLECTORS = [
         bTokenSymbol: 'USDC',
         aCollector: '0x9518dC115Bf7AbD278434bf1b55B6EB9C2ba7D61',
         aBToken: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-        usdce: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
-        operator: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B'
-    }]
+        operator: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B',
+        asset: 'USDC'
+    },
+    {
+        version: 'V4',
+        network: 'Arbitrum',
+        bTokenSymbol: 'USDC.E',
+        aCollector: '0x9518dC115Bf7AbD278434bf1b55B6EB9C2ba7D61',
+        aBToken: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
+        operator: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B',
+        asset: 'USDC.E'
+
+    }
+
+]
 
 const COLLECTORS = [
     {
@@ -88,7 +100,7 @@ const COLLECTORS = [
     }
 ]
 
-const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollector, aBToken, usdce, operator}) => {
+const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollector, aBToken, asset, operator}) => {
     const [state, setState] = useState({ selectedToken: '', bTokenAmount: '', minDeriAmount: ''})
 
     const update = useCallback(async () => {
@@ -97,9 +109,8 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
         const balance = nn(await bToken.balanceOf(aCollector), 6)
         const admin = await collector.admin()
 
-        const usdceToken = new ethers.Contract(usdce, ABI_ERC20, PROVIDERS[network])
-        const usdce_balance = nn(await usdceToken.balanceOf(aCollector), 6)
-        setState({ ...state, balance, usdce_balance, admin})
+
+        setState({ ...state, balance, admin})
     }, [])
 
     useEffect(() => {
@@ -124,21 +135,13 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
             <td>{network}</td>
             <td><Address address={aCollector}/></td>
             <td>{state.balance}</td>
-            <td>{state.usdce_balance}</td>
             <td><Address address={operator} /></td>
-            <td>
-                <div className="input-group">
-                    <Form.Select value={state.selectedToken} onChange={(e) => { setState({ ...state, selectedToken: e.target.value }) }}>
-                        <option value="0xaf88d065e77c8cC2239327C5EDb3A432268e5831">USDC</option>
-                        <option value="0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8">USDC.e</option>
-                    </Form.Select>
-                </div>
-            </td>
+            <td> {asset} </td>
             <td>
                 <div className="input-group">
                     <Form.Control value={state.bTokenAmount} onChange={(e) => {setState({...state, bTokenAmount: e.target.value})}}/>
                     <div className="input-group-append">
-                        <span className="input-group-text">{bTokenSymbol}</span>
+                        <span className="input-group-text">{asset}</span>
                     </div>
                 </div>
             </td>
@@ -167,7 +170,6 @@ export const ArbitrumProtocolFeeManager = () => {
                 <td>Network</td>
                 <td>Manager</td>
                 <td>USDC Balance</td>
-                <td>USDC.E Balance</td>
                 <td>Operator</td>
                 <td>Asset</td>
                 <td>Amount</td>
