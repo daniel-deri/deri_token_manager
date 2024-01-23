@@ -84,10 +84,10 @@ export const BurnDeriCollectors = () => {
     return (
         <div>
             <div>
-                BSC Collector:
-                <span style={{ fontWeight: 'bold', color: 'red' }}>
+                BSC Collector
+                {/* <span style={{ fontWeight: 'bold', color: 'red' }}>
                     [TODO]change arbitrum destination address to 0x9518dC115Bf7AbD278434bf1b55B6EB9C2ba7D61
-                </span>
+                </span> */}
             </div>
 
         <table>
