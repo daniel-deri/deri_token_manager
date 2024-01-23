@@ -24,7 +24,7 @@ const COLLECTORS = [
         bTokenSymbol: 'BUSD',
         aCollector: '0xF5A17a5035F54EE3442F6911bDf031a61cf0094C',
         aBToken: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
-        aBurningDestination: '0xa544e477866a29685E4155E27f9bD886C63880a0'
+        aBurningDestination: '0x9518dC115Bf7AbD278434bf1b55B6EB9C2ba7D61'
     }
 ]
 
