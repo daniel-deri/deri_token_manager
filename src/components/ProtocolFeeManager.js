@@ -100,6 +100,8 @@ const COLLECTORS = [
     }
 ]
 
+const DERI_ADDRESS = "0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12"
+
 const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollector, aBToken, asset, operator}) => {
     const [state, setState] = useState({ selectedToken: '', bTokenAmount: '', minDeriAmount: ''})
 
@@ -109,8 +111,9 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
         const balance = nn(await bToken.balanceOf(aCollector), 6)
         const admin = await collector.admin()
 
-
-        setState({ ...state, balance, admin})
+        const deri = new ethers.Contract(DERI_ADDRESS, ABI_ERC20, PROVIDERS[network])
+        const deri_balance = nn(await deri.balanceOf(aCollector))
+        setState({ ...state, balance, admin, deri_balance})
     }, [])
 
     useEffect(() => {
@@ -154,6 +157,7 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
                 </div>
             </td>
             <td><CButton network={network} text='BuyForBurn' onClick={onBuyForBurn}/></td>
+            <td>{state.deri_balance}</td>
             <td><CButton network={network} text='Burn' onClick={onBurn} /></td>
         </tr>
     )
@@ -174,6 +178,8 @@ export const ArbitrumProtocolFeeManager = () => {
                 <td>Asset</td>
                 <td>Amount</td>
                 <td>minDeriAmount</td>
+                <td></td>
+                <td>Deri Amount</td>
                 <td></td>
             </tr>
             {ARBITRUM_COLLECTORS.map((row, idx) => (
