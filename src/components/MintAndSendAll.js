@@ -51,6 +51,10 @@ const DeriTokenManager_ABI = [
         "type": "event"
     },
     {
+        "stateMutability": "payable",
+        "type": "fallback"
+    },
+    {
         "inputs": [],
         "name": "admin",
         "outputs": [
@@ -144,6 +148,16 @@ const DeriTokenManager_ABI = [
                         "internalType": "address",
                         "name": "_refundRecipient",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_l2Token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "_minGasLimit",
+                        "type": "uint32"
                     }
                 ],
                 "internalType": "struct DeriTokenManagerImplementation.CrossChainDetails[]",
@@ -303,6 +317,16 @@ const DeriTokenManager_ABI = [
                         "internalType": "address",
                         "name": "_refundRecipient",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_l2Token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "_minGasLimit",
+                        "type": "uint32"
                     }
                 ],
                 "internalType": "struct DeriTokenManagerImplementation.CrossChainDetails[]",
@@ -353,6 +377,17 @@ const DeriTokenManager_ABI = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawETH",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
     }
 ]
 
@@ -496,12 +531,14 @@ const ADDRESSES = {
     deriZksync: '0x140D5bc5b62d6cB492B1A475127F50d531023803',
     deriLinea: '0x4aCde18aCDE7F195E6Fb928E15Dc8D83D67c1f3A',
     deriPolygonzkEVM: "0x360CE6EeCDF98e3851531051907e6a809BF6e236",
+    deriManta: "0xd212377f71F15A1b962c9265Dc44FBcEAf0Bc46D",
 
     rewardVaultArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
     rewardVaultZksync: '0x2E46b7e73fdb603A821a3F8a0eCaB077ebF81014',
     rewardVaultLinea: '0x1640beAd2163Cf8D7cc52662768992A1fEBDbF2F',
     rewardVaultScroll: '0x2C139f40E03b585Be0A9503Ad32e0b80745211b9',
     rewardVaultPolygonzkEVM: "0x7B8bCf00DEf58b50620b2C253f3A97EE51F44683",
+    rewardVaultManta: "0x2ae67d0107d75B2a38890d83822d7673213aD276",
     uniswapLpStakerArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
 
     wormholeEthereum: '0x6874640cC849153Cb3402D193C33c416972159Ce',
@@ -516,7 +553,8 @@ const ADDRESSES = {
 
     lineaBridge: "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
     scrollGateway: "0xF8B1378579659D8F7EE5f3C929c2f3E332E41Fd6",
-    polygonzkEVMBridge: "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"
+    polygonzkEVMBridge: "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe",
+    mantaBridge: "0x3B95bC951EE0f553ba487327278cAc44f29715E5",
 }
 
 const ApproveBridges = () => {
@@ -577,7 +615,8 @@ const SetRewardPerWeek = () => {
         { id: 1, network: 'Zksync', name: 'zksyncRewardVault', title: 'RewardVault (Zksync)' },
         { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' },
         { id: 3, network: 'Scroll', name: 'scrollRewardVault', title: 'RewardVault (Scroll)' },
-        { id: 3, network: 'PolygonzkEVM', name: 'polygonzkevmRewardVault', title: 'RewardVault (PolygozkEVM)' }
+        { id: 4, network: 'PolygonzkEVM', name: 'polygonzkevmRewardVault', title: 'RewardVault (PolygozkEVM)' },
+        { id: 5, network: 'Manta', name: 'mantaRewardVault', title: 'RewardVault (Manta)' }
     ];
 
     return (
@@ -818,7 +857,9 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _l1Token: "0x0000000000000000000000000000000000000000",
             _l2TxGasLimit: 0,
             _l2TxGasPerPubdataByte: 0,
-            _refundRecipient: "0x0000000000000000000000000000000000000000"
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 0
         }
 
         const arbitrumUniswapDetails = {
@@ -834,7 +875,9 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _l1Token: "0x0000000000000000000000000000000000000000",
             _l2TxGasLimit: 0,
             _l2TxGasPerPubdataByte: 0,
-            _refundRecipient: "0x0000000000000000000000000000000000000000"
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 0
         }
 
 
@@ -851,7 +894,9 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _l1Token: ADDRESSES.deriEthereum,
             _l2TxGasLimit: gasLimit,
             _l2TxGasPerPubdataByte: 800,
-            _refundRecipient: "0x0000000000000000000000000000000000000000"
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 0
         }
 
         const lineaRewardVaultDetails = {
@@ -867,7 +912,9 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _l1Token: "0x0000000000000000000000000000000000000000",
             _l2TxGasLimit: 0,
             _l2TxGasPerPubdataByte: 0,
-            _refundRecipient: "0x0000000000000000000000000000000000000000"
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 0
         }
 
         const scrollRewardVaultDetails = {
@@ -883,7 +930,9 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _l1Token: "0x0000000000000000000000000000000000000000",
             _l2TxGasLimit: 0,
             _l2TxGasPerPubdataByte: 0,
-            _refundRecipient: "0x0000000000000000000000000000000000000000"
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 0
         }
 
         const polygonzkevmRewardVaultDetails = {
@@ -899,16 +948,34 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _l1Token: "0x0000000000000000000000000000000000000000",
             _l2TxGasLimit: 0,
             _l2TxGasPerPubdataByte: 0,
-            _refundRecipient: "0x0000000000000000000000000000000000000000"
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 0
         }
 
-        
+        const mantaRewardVaultDetails = {
+            poolChain: 5,
+            _amount: bb(suggestedSendAmount.Manta),
+            _token: ADDRESSES.deriEthereum,
+            _to: ADDRESSES.rewardVaultManta,
+            _maxGas: 0,
+            _gasPriceBid: 0,
+            _value: 0,
+            _data: "0x",
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0xd212377f71F15A1b962c9265Dc44FBcEAf0Bc46D",
+            _minGasLimit: 200000
+        }
 
         console.log("mint all param signature", signature)
         
         // const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
             
-        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails, polygonzkevmRewardVaultDetails]
+        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails, polygonzkevmRewardVaultDetails, mantaRewardVaultDetails]
             .filter(detail => detail._amount > 0);
 
         // 计算 msg_value

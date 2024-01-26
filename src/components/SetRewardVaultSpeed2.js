@@ -54,6 +54,15 @@ const POOLS = [
         multicallAddress: '0x',
         ltokenAddress: '0x',
     },
+    {
+        network: 'Manta',
+        poolName: 'Main',
+        gatewayAddress: '0xc8fa78f6B68ab22239222b4249b1fF968D154aE9',
+        rewardVaultAddress: '0x2ae67d0107d75B2a38890d83822d7673213aD276',
+        deriAddress: '0xd212377f71F15A1b962c9265Dc44FBcEAf0Bc46D',
+        multicallAddress: '0x',
+        ltokenAddress: '0x',
+    },
 ]
 
 
