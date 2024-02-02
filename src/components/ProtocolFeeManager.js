@@ -4,6 +4,7 @@ import {Form} from 'react-bootstrap'
 import {PROVIDERS, provider, bb, nn, executeTx} from './Chain'
 import {Address} from './Address'
 import {CButton} from './CButton'
+import { L2TransactionReceipt, L2ToL1MessageStatus } from '@arbitrum/sdk'
 
 const ABI_ERC20 = [
     'function balanceOf(address account) view returns (uint256)'
@@ -132,6 +133,35 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
         if (tx) await update()
     }
 
+    const onFinalizeBurn = async () => {
+        const l1Wallet = provider.getSigner()
+        if (l1Wallet.provider.provider.chainId != '0x1') {
+            window.confirm('Must switch to Ethereum Mainnet to finalize burn!')
+            return
+        }
+        const l2Provider = PROVIDERS.Arbitrum
+
+        const receipt = await l2Provider.getTransactionReceipt(state.txhash)
+        const block = await l2Provider.getBlock(receipt.blockNumber)
+        const timeleft = 86400 * 8 - (parseInt(Date.now() / 1000) - block.timestamp)
+        if (timeleft > 0) {
+            window.confirm(`Please wait another ${parseInt(timeleft / 86400)} days and ${parseInt((timeleft % 86400) / 3600) + 1} hours to execute the message`)
+            return
+        }
+
+        const l2Receipt = new L2TransactionReceipt(receipt)
+        const messages = await l2Receipt.getL2ToL1Messages(l1Wallet, l2Provider)
+        const l2ToL1Msg = messages[0]
+
+        if ((await l2ToL1Msg.status(l2Provider)) == L2ToL1MessageStatus.EXECUTED) {
+            window.confirm('Message already executed! Nothing else to do here')
+            return
+        }
+
+        const res = await l2ToL1Msg.execute(l2Provider)
+        console.log('Done')
+    }
+
     return (
         <tr>
             <td>{version}</td>
@@ -159,6 +189,8 @@ const ArbitrumProtocolFeeManagerRow = ({ version, network, bTokenSymbol, aCollec
             <td><CButton network={network} text='BuyForBurn' onClick={onBuyForBurn}/></td>
             <td>{state.deri_balance}</td>
             <td><CButton network={network} text='Burn' onClick={onBurn} /></td>
+            <td><Form.Control value={state.txhash || ''} onChange={(e) => { setState({ ...state, txhash: e.target.value }) }} /></td>
+            <td><CButton network='Ethereum' text='FinalizeBurn' onClick={onFinalizeBurn} /></td>
         </tr>
     )
 }
@@ -180,6 +212,8 @@ export const ArbitrumProtocolFeeManager = () => {
                 <td>minDeriAmount</td>
                 <td></td>
                 <td>Deri Amount</td>
+                <td></td>
+                <td>Txhash</td>
                 <td></td>
             </tr>
             {ARBITRUM_COLLECTORS.map((row, idx) => (
