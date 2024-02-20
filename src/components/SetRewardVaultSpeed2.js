@@ -122,48 +122,97 @@ function chunkArray(array, chunkSize) {
     }
     return chunks;
 }
+// async function pendingAmount(network, ptoken_address, multicall_address, reward_address, gateway_address) {
+//     const ptoken = new ethers.Contract(ptoken_address, PTOKEN_ABI, PROVIDERS[network]);
+//     const totalMinted = await ptoken.totalMinted();
+//     const baseTokenId = await ptoken.BASE_TOKENID();
+//     console.log("linea", totalMinted, baseTokenId)
+//     const tokenIdArray = [];
+//     for (let i = 0; i < totalMinted; i++) {
+//         tokenIdArray.push(baseTokenId.add(i));
+//     }
+//     const tokenIdChunks = chunkArray(tokenIdArray, 20);
+//     const multicall = new ethers.Contract(multicall_address, MULTICALL_ABI, PROVIDERS[network]);
+//     const rewardInterface = new ethers.utils.Interface(REWARD_VAULT_ABI);
+
+//     // Process each chunk in parallel
+//     const chunkPromises = tokenIdChunks.map(async (chunk) => {
+//         const pendingCalls = chunk.map((user) => ({
+//             target: reward_address,
+//             allowFailure: true,
+//             callData: rewardInterface.encodeFunctionData('pending', [gateway_address, user]),
+//         }));
+
+//         const pendingResult = await multicall.callStatic.aggregate3(pendingCalls);
+//         return pendingResult.map(({ success, returnData }, i) => {
+//             if (!success) throw new Error(`Failed to get resolver for ${chunk[i]}`);
+//             return rewardInterface.decodeFunctionResult('pending', returnData)[0];
+//         });
+//     });
+
+//     // Wait for all chunk promises to resolve
+//     const allChunkResults = await Promise.all(chunkPromises);
+
+//     // Sum the pending amounts from all chunks
+//     let totalPendingAmount = ethers.BigNumber.from(0);
+//     allChunkResults.forEach(chunkPendingAmount => {
+//         const sumOfChunk = chunkPendingAmount.reduce((acc, amount) => acc.add(amount), ethers.BigNumber.from(0));
+//         totalPendingAmount = totalPendingAmount.add(sumOfChunk);
+//     });
+
+//     console.log("totalPendingAmount", nn(totalPendingAmount));
+//     return totalPendingAmount;
+// }
+
 async function pendingAmount(network, ptoken_address, multicall_address, reward_address, gateway_address) {
     const ptoken = new ethers.Contract(ptoken_address, PTOKEN_ABI, PROVIDERS[network]);
     const totalMinted = await ptoken.totalMinted();
     const baseTokenId = await ptoken.BASE_TOKENID();
-    console.log("linea", totalMinted, baseTokenId)
+    console.log("line", totalMinted, baseTokenId);
     const tokenIdArray = [];
     for (let i = 0; i < totalMinted; i++) {
         tokenIdArray.push(baseTokenId.add(i));
     }
-    const tokenIdChunks = chunkArray(tokenIdArray, 200);
+    const tokenIdChunks = chunkArray(tokenIdArray, 100); // 将tokenId分成每组20个的小数组
     const multicall = new ethers.Contract(multicall_address, MULTICALL_ABI, PROVIDERS[network]);
     const rewardInterface = new ethers.utils.Interface(REWARD_VAULT_ABI);
 
-    // Process each chunk in parallel
-    const chunkPromises = tokenIdChunks.map(async (chunk) => {
-        const pendingCalls = chunk.map((user) => ({
-            target: reward_address,
-            allowFailure: true,
-            callData: rewardInterface.encodeFunctionData('pending', [gateway_address, user]),
-        }));
-
-        const pendingResult = await multicall.callStatic.aggregate3(pendingCalls);
-        return pendingResult.map(({ success, returnData }, i) => {
-            if (!success) throw new Error(`Failed to get resolver for ${chunk[i]}`);
-            return rewardInterface.decodeFunctionResult('pending', returnData)[0];
-        });
-    });
-
-    // Wait for all chunk promises to resolve
-    const allChunkResults = await Promise.all(chunkPromises);
-
-    // Sum the pending amounts from all chunks
     let totalPendingAmount = ethers.BigNumber.from(0);
-    allChunkResults.forEach(chunkPendingAmount => {
-        const sumOfChunk = chunkPendingAmount.reduce((acc, amount) => acc.add(amount), ethers.BigNumber.from(0));
-        totalPendingAmount = totalPendingAmount.add(sumOfChunk);
-    });
 
-    console.log("totalPendingAmount", nn(totalPendingAmount));
+    // 分批处理每个chunk，每批处理200个tokenId
+    for (let i = 0; i < tokenIdChunks.length; i += 10) { // 每次处理10个chunks，即200个tokenId
+        const currentChunks = tokenIdChunks.slice(i, i + 10);
+        const chunkPromises = currentChunks.map(async (chunk) => {
+            const pendingCalls = chunk.map((tokenId) => ({
+                target: reward_address,
+                allowFailure: true,
+                callData: rewardInterface.encodeFunctionData('pending', [gateway_address, tokenId]),
+            }));
+
+            const pendingResult = await multicall.callStatic.aggregate3(pendingCalls);
+            return pendingResult.map(({ success, returnData }, index) => {
+                if (!success) throw new Error(`Failed to get resolver for ${chunk[index]}`);
+                return rewardInterface.decodeFunctionResult('pending', returnData)[0];
+            });
+        });
+
+        // 等待当前批次的所有Promise完成
+        const allChunkResults = await Promise.all(chunkPromises);
+        allChunkResults.forEach(chunkPendingAmount => {
+            const sumOfChunk = chunkPendingAmount.reduce((acc, amount) => acc.add(amount), ethers.BigNumber.from(0));
+            totalPendingAmount = totalPendingAmount.add(sumOfChunk);
+        });
+
+        // 如果不是最后一批chunk，等待1秒
+        if (i + 10 < tokenIdChunks.length) {
+            console.log("linea chunk waiting", i)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    console.log("totalPendingAmount", totalPendingAmount.toString());
     return totalPendingAmount;
 }
-
 
 // async function pendingAmount(network, ptoken_address, multicall_address, reward_address, gateway_address) {
 
