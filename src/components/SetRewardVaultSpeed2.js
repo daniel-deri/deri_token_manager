@@ -126,6 +126,7 @@ async function pendingAmount(network, ptoken_address, multicall_address, reward_
     const ptoken = new ethers.Contract(ptoken_address, PTOKEN_ABI, PROVIDERS[network]);
     const totalMinted = await ptoken.totalMinted();
     const baseTokenId = await ptoken.BASE_TOKENID();
+    console.log("linea", totalMinted, baseTokenId)
     const tokenIdArray = [];
     for (let i = 0; i < totalMinted; i++) {
         tokenIdArray.push(baseTokenId.add(i));
