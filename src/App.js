@@ -14,7 +14,7 @@ function App() {
     return (
         <SuggestedSendAmountProvider>
             <div className="App">
-                <h3>Deri V4 Auxiliary (20240202)</h3>
+                <h3>Deri V4 Auxiliary (20240311)</h3>
                 <MintAndSendAll />
                 <SetRewardVaultSpeed2 />
                 <BurnDeri />
