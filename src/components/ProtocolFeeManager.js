@@ -98,7 +98,17 @@ const COLLECTORS = [
         aCollector: '0xcBCA586bf9706706398164bb5EB8E48f220Fe408',
         aBToken: '0xb73603C5d87fA094B7314C74ACE2e64D165016fb',
         operator: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B'
+    },
+    {
+        version: 'V4',
+        network: 'Bsc',
+        bTokenSymbol: 'USDC',
+        aCollector: '0x8bc90ab99e0c5E7434047B6A3766C781F212796E',
+        aBToken: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+        operator: '0xc58a5266aFd35bCf0c5AEeFDe99853D1E76e811B'
     }
+
+    
 ]
 
 const DERI_ADDRESS = "0x21E60EE73F17AC0A411ae5D690f908c3ED66Fe12"
