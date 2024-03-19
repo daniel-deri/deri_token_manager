@@ -539,6 +539,7 @@ const ADDRESSES = {
     rewardVaultScroll: '0x2C139f40E03b585Be0A9503Ad32e0b80745211b9',
     rewardVaultPolygonzkEVM: "0x7B8bCf00DEf58b50620b2C253f3A97EE51F44683",
     rewardVaultManta: "0x2ae67d0107d75B2a38890d83822d7673213aD276",
+    rewardVaultBsc: "0x6395e2125728613c814d198e3D6f79eE699f1953",
     uniswapLpStakerArbitrum: '0x261d0219c017fFc3D4C48B6d8773D95F592ac27b',
 
     wormholeEthereum: '0x6874640cC849153Cb3402D193C33c416972159Ce',
@@ -616,7 +617,8 @@ const SetRewardPerWeek = () => {
         { id: 2, network: 'Linea', name: 'lineaRewardVault', title: 'RewardVault (Linea)' },
         { id: 3, network: 'Scroll', name: 'scrollRewardVault', title: 'RewardVault (Scroll)' },
         { id: 4, network: 'PolygonzkEVM', name: 'polygonzkevmRewardVault', title: 'RewardVault (PolygozkEVM)' },
-        { id: 5, network: 'Manta', name: 'mantaRewardVault', title: 'RewardVault (Manta)' }
+        { id: 5, network: 'Manta', name: 'mantaRewardVault', title: 'RewardVault (Manta)' },
+        { id: 6, network: 'Bsc', name: 'bscRewardVault', title: 'RewardVault (Bsc)' }
     ];
 
     return (
@@ -743,33 +745,33 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         };
     }
 
-    // const onClaim = async () => {
-    //     const signer = provider.getSigner()
-    //     const deriTokenManagerBNBContract = new ethers.Contract(
-    //         ADDRESSES.deriTokenManager,
-    //         DeriTokenManagerBNB_ABI,
-    //         signer
-    //     );
+    const onClaim = async () => {
+        const signer = provider.getSigner()
+        const deriTokenManagerBNBContract = new ethers.Contract(
+            ADDRESSES.deriTokenManager,
+            DeriTokenManagerBNB_ABI,
+            signer
+        );
 
-    //     console.log("signature", state.signature)
+        console.log("signature", state.signature)
 
-    //     let tx
-    //     try {
-    //         tx = await executeTx(deriTokenManagerBNBContract.claimAndSendBnb, [
-    //             state.signature.amount,
-    //             state.signature.fromChainId,
-    //             state.signature.fromWormhole,
-    //             state.signature.nonce,
-    //             state.signature.v,
-    //             state.signature.r,
-    //             state.signature.s,
-    //         ])
+        let tx
+        try {
+            tx = await executeTx(deriTokenManagerBNBContract.claimAndSendBnb, [
+                state.signature.amount,
+                state.signature.fromChainId,
+                state.signature.fromWormhole,
+                state.signature.nonce,
+                state.signature.v,
+                state.signature.r,
+                state.signature.s,
+            ])
 
-    //     } catch (error) {
-    //         const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
-    //         alert(message)
-    //     }
-    // }
+        } catch (error) {
+            const message = `Transaction will fail with reason:\n${error?.reason || error?.message || error}`
+            alert(message)
+        }
+    }
 
 
     const onBridge = async () => {
@@ -971,11 +973,29 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             _minGasLimit: 200000
         }
 
+        const bscRewardVaultDetails = {
+            poolChain: 5,
+            _amount: bb(suggestedSendAmount.Bsc),
+            _token: ADDRESSES.deriEthereum,
+            _to: ADDRESSES.rewardVaultBsc,
+            _maxGas: 0,
+            _gasPriceBid: 0,
+            _value: 0,
+            _data: "0x",
+            _l2Receiver: "0x0000000000000000000000000000000000000000",
+            _l1Token: "0x0000000000000000000000000000000000000000",
+            _l2TxGasLimit: 0,
+            _l2TxGasPerPubdataByte: 0,
+            _refundRecipient: "0x0000000000000000000000000000000000000000",
+            _l2Token: "0x0000000000000000000000000000000000000000",
+            _minGasLimit: 200000
+        }
+
         console.log("mint all param signature", signature)
         
         // const msg_value = arbitrumRewardVaultDetails._value.add(arbitrumUniswapDetails._value).add(zksyncRewardVaultDetails._value).add(lineaRewardVaultDetails._value)
             
-        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails, polygonzkevmRewardVaultDetails, mantaRewardVaultDetails]
+        const details = [arbitrumRewardVaultDetails, zksyncRewardVaultDetails, lineaRewardVaultDetails, scrollRewardVaultDetails, polygonzkevmRewardVaultDetails, mantaRewardVaultDetails, bscRewardVaultDetails]
             .filter(detail => detail._amount > 0);
 
         // 计算 msg_value
@@ -1007,7 +1027,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             <td><Address address={ADDRESSES.deriTokenManager} /></td>
             {/* <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td> */}
             <td><CButton network='Ethereum' text='Mint&BridgeAll' onClick={onBridge} /></td>
-            {/* <td><CButton network='Bsc' text='Claim&Send' onClick={onClaim} /></td> */}
+            <td><CButton network='Bsc' text='Claim&Send' onClick={onClaim} /></td>
         </tr>
     )
 }

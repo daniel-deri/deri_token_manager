@@ -63,6 +63,15 @@ const POOLS = [
         multicallAddress: '0x',
         ltokenAddress: '0x',
     },
+    {
+        network: 'Bsc',
+        poolName: 'Main',
+        gatewayAddress: '0x2c2E1eE20C633EAe18239c0BF59cEf1FC44939aC',
+        rewardVaultAddress: '0x6395e2125728613c814d198e3D6f79eE699f1953',
+        deriAddress: '0xe60eaf5A997DFAe83739e035b005A33AfdCc6df5',
+        multicallAddress: '0x',
+        ltokenAddress: '0x',
+    },
 ]
 
 
