@@ -974,7 +974,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
         }
 
         const bscRewardVaultDetails = {
-            poolChain: 5,
+            poolChain: 6,
             _amount: bb(suggestedSendAmount.Bsc),
             _token: ADDRESSES.deriEthereum,
             _to: ADDRESSES.rewardVaultBsc,
@@ -1025,7 +1025,7 @@ const SendDeriRowEthereumToAll = ({ destinationName, destinationAddress, fromBal
             <td>{nn(totalReward)}</td>
             <td>DeriTokenManager</td>
             <td><Address address={ADDRESSES.deriTokenManager} /></td>
-            {/* <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td> */}
+            <td><span style={{ color: 'blue' }}>{` BNB Claimable: ${state.signature.valid ? nn(state.signature.amount) : 0}`}</span></td>
             <td><CButton network='Ethereum' text='Mint&BridgeAll' onClick={onBridge} /></td>
             <td><CButton network='Bsc' text='Claim&Send' onClick={onClaim} /></td>
         </tr>
